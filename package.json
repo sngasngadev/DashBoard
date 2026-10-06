@@ -2,7 +2,7 @@
   "name": "dashboard",
   "version": "0.2.0",
   "private": true,
-  "description": "Installable personal dashboard PWA with extensible cards",
+  "description": "Single-file offline personal dashboard",
   "scripts": {
     "dev": "vite",
     "dev:web": "vite",
@@ -30,6 +30,7 @@
     "jsdom": "latest",
     "typescript": "latest",
     "vite": "latest",
-    "vitest": "latest"
+    "vitest": "latest",
+    "vite-plugin-singlefile": "latest"
   }
 }
