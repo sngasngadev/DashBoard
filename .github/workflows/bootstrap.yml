@@ -20,6 +20,7 @@ jobs:
           tar -xzf /tmp/dashboard-src.tgz -C .
           rm -f bootstrap.part1 bootstrap.part2 bootstrap.part3 bootstrap.part4
           rm -f .github/workflows/bootstrap.yml
+          rm -f .github/workflows/build.yml
       - name: Commit source
         shell: bash
         run: |
