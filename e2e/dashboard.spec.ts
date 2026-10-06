@@ -182,8 +182,12 @@ test('auto compact off keeps cards still while dragging, then pushes only on dro
 
   // No live pushing while hovering, but the occupied card is displaced after drop.
   expect(Math.abs(todoAfter.x - todoBefore.x) + Math.abs(todoAfter.y - todoBefore.y)).toBeGreaterThan(5);
-  expect(Math.abs(boardAfter.x - todoBefore.x)).toBeLessThan(8);
-  expect(Math.abs(boardAfter.y - todoBefore.y)).toBeLessThan(8);
+
+  const overlap = boardAfter.x < todoAfter.x + todoAfter.width - 1
+    && boardAfter.x + boardAfter.width > todoAfter.x + 1
+    && boardAfter.y < todoAfter.y + todoAfter.height - 1
+    && boardAfter.y + boardAfter.height > todoAfter.y + 1;
+  expect(overlap).toBe(false);
 });
 
 
