@@ -160,3 +160,84 @@ export function pushCardsFromDrop(cards: CardRecord[], movedId: string, target: 
     return next ? { ...card, layout: next } : card;
   });
 }
+
+
+export interface DashboardLayoutResult {
+  cards: CardRecord[];
+  addTileLayout: CardLayout;
+}
+
+export function resolveAddTileDrop(cards: CardRecord[], target: CardLayout): DashboardLayoutResult {
+  return {
+    cards,
+    addTileLayout: safeAddTilePosition(cards, target)
+  };
+}
+
+export function resolveCardDrop(
+  cards: CardRecord[],
+  addTileLayout: CardLayout,
+  movedId: string,
+  target: CardLayout,
+  autoCompact: boolean,
+  cols = GRID_COLS
+): DashboardLayoutResult {
+  const moved = cards.find(card => card.id === movedId);
+  if (!moved) {
+    const repaired = repairOverlaps(cards, cols);
+    return {
+      cards: repaired,
+      addTileLayout: safeAddTilePosition(repaired, addTileLayout, cols)
+    };
+  }
+
+  const nextCards = autoCompact
+    ? reorderAndCompactCards(cards, movedId, target, cols)
+    : pushCardsFromDrop(cards, movedId, {
+        x: target.x,
+        y: target.y,
+        w: moved.layout.w,
+        h: moved.layout.h
+      }, cols);
+
+  const preferredAdd = autoCompact
+    ? nextCardPosition(nextCards, 3, 3)
+    : addTileLayout;
+
+  return {
+    cards: nextCards,
+    addTileLayout: safeAddTilePosition(nextCards, preferredAdd, cols)
+  };
+}
+
+export function resolveCardResize(
+  cards: CardRecord[],
+  addTileLayout: CardLayout,
+  updatedLayouts: ReadonlyMap<string, CardLayout>,
+  autoCompact: boolean,
+  cols = GRID_COLS
+): DashboardLayoutResult {
+  let nextCards = repairOverlaps(cards.map(card => ({
+    ...card,
+    layout: updatedLayouts.get(card.id) ?? card.layout
+  })), cols);
+
+  if (autoCompact) nextCards = compactCards(nextCards, cols);
+
+  const preferredAdd = autoCompact
+    ? nextCardPosition(nextCards, 3, 3)
+    : addTileLayout;
+
+  return {
+    cards: nextCards,
+    addTileLayout: safeAddTilePosition(nextCards, preferredAdd, cols)
+  };
+}
+
+export function resolveCompact(cards: CardRecord[], cols = GRID_COLS): DashboardLayoutResult {
+  const nextCards = compactCards(cards, cols);
+  return {
+    cards: nextCards,
+    addTileLayout: safeAddTilePosition(nextCards, nextCardPosition(nextCards, 3, 3), cols)
+  };
+}
