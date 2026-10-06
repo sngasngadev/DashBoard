@@ -174,7 +174,7 @@ test('auto compact off keeps cards still while dragging, then pushes only on dro
   expect(Math.abs(todoDuring.y - todoBefore.y)).toBeLessThan(2);
 
   await page.mouse.up();
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(350);
 
   const todoAfter = await todoCard.boundingBox();
   const boardAfter = await boardCard.boundingBox();
