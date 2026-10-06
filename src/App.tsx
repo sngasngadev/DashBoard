@@ -18,7 +18,7 @@ import { MemoBoardCard } from './cards/MemoBoardCard';
 
 const ADD_ID = '__add_card__';
 
-type ConfirmState = null | { title: string; message: string; action: () => void; confirmLabel?: string };
+type ConfirmState = null | { title: string; message: string; action: () => void; confirmLabel?: string; notice?: boolean };
 
 function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean) {
   const [width, setWidth] = useState<number | null>(null);
@@ -39,7 +39,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [layoutRevision, setLayoutRevision] = useState(0);
   const gridRef = useRef<HTMLDivElement>(null);
   const width = useContainerWidth(gridRef, loaded);
@@ -52,7 +52,11 @@ export default function App() {
   useEffect(() => {
     if (!loaded) return;
     setSaveStatus('saving');
-    const id = window.setTimeout(() => saveState(state).finally(() => setSaveStatus('saved')), 350);
+    const id = window.setTimeout(() => {
+      saveState(state)
+        .then(() => setSaveStatus('saved'))
+        .catch(() => setSaveStatus('error'));
+    }, 350);
     return () => window.clearTimeout(id);
   }, [state, loaded]);
 
@@ -203,13 +207,23 @@ export default function App() {
     input.type = 'file'; input.accept = '.json,application/json';
     input.onchange = async () => {
       if (!input.files?.[0]) return;
-      const imported = await importBackup(input.files[0]);
-      setConfirm({
-        title: '백업을 불러올까요?',
-        message: '현재 대시보드 내용과 배치가 백업 파일의 내용으로 바뀝니다.',
-        confirmLabel: '불러오기',
-        action: () => setState(imported)
-      });
+      try {
+        const imported = await importBackup(input.files[0]);
+        setConfirm({
+          title: '백업을 불러올까요?',
+          message: '현재 대시보드 내용과 배치가 백업 파일의 내용으로 바뀝니다.',
+          confirmLabel: '불러오기',
+          action: () => setState(imported)
+        });
+      } catch (error) {
+        setConfirm({
+          title: '백업을 불러올 수 없습니다',
+          message: error instanceof Error ? error.message : '백업 파일을 확인하세요.',
+          confirmLabel: '확인',
+          notice: true,
+          action: () => undefined
+        });
+      }
     };
     input.click();
   };
@@ -224,7 +238,7 @@ export default function App() {
         <input className="dashboard-title" value={state.meta.title} onChange={e => setState(prev => ({ ...prev, meta: { ...prev.meta, title: e.target.value } }))} aria-label="대시보드 제목" />
         <textarea className="dashboard-description" rows={1} value={state.meta.description} onChange={e => setState(prev => ({ ...prev, meta: { ...prev.meta, description: e.target.value } }))} aria-label="대시보드 설명" />
       </div>
-      <div className="header-actions"><span className={`save-status ${saveStatus}`}>{saveStatus === 'saving' ? '저장 중…' : '저장됨'}</span><button className="settings-button" onClick={() => setSettingsOpen(true)}><Settings size={18}/><span>설정</span></button></div>
+      <div className="header-actions"><span className={`save-status ${saveStatus}`}>{saveStatus === 'saving' ? '저장 중…' : saveStatus === 'error' ? '저장 실패' : '저장됨'}</span><button className="settings-button" onClick={() => setSettingsOpen(true)}><Settings size={18}/><span>설정</span></button></div>
     </header>
 
     <nav className="tabs" aria-label="대시보드 탭">
@@ -275,6 +289,6 @@ export default function App() {
         return { ...prev, cards: result.cards, settings: { ...prev.settings, addTileLayout: result.addTileLayout } };
       })}
       onExport={() => exportBackup(state)} onImport={doImport} />
-    <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
+    <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} notice={confirm?.notice} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
   </div>;
 }
