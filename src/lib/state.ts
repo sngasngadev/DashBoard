@@ -1,6 +1,6 @@
 import type { BoardNote, CardLayout, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, NoteColor, TodoData, TodoItem } from '../types/dashboard';
 import { makeId } from './id';
-import { GRID_COLS, nextCardPosition } from './layout';
+import { GRID_COLS, nextCardPosition, repairOverlaps, safeAddTilePosition } from './layout';
 
 const now = () => new Date().toISOString();
 
@@ -119,7 +119,7 @@ export function normalizeState(raw: unknown): DashboardState {
   if (!isObject(raw) || raw.version !== 1 || !Array.isArray(raw.cards)) return createInitialState();
 
   const seen = new Set<string>();
-  const cards = raw.cards.flatMap((value): CardRecord[] => {
+  const normalizedCards = raw.cards.flatMap((value): CardRecord[] => {
     const card = normalizeCard(value);
     if (!card) return [];
     if (seen.has(card.id)) card.id = makeId('card');
@@ -127,8 +127,13 @@ export function normalizeState(raw: unknown): DashboardState {
     return [card];
   });
 
+  const cards = repairOverlaps(normalizedCards);
   const meta = isObject(raw.meta) ? raw.meta : {};
   const settings = isObject(raw.settings) ? raw.settings : {};
+  const rawAddTile = isObject(settings.addTileLayout)
+    ? normalizeLayout(settings.addTileLayout)
+    : nextCardPosition(cards, 3, 3);
+  const addTileLayout = safeAddTilePosition(cards, rawAddTile);
 
   return {
     version: 1,
@@ -138,9 +143,7 @@ export function normalizeState(raw: unknown): DashboardState {
     },
     settings: {
       autoCompact: settings.autoCompact === undefined ? true : Boolean(settings.autoCompact),
-      addTileLayout: isObject(settings.addTileLayout)
-        ? normalizeLayout(settings.addTileLayout)
-        : nextCardPosition(cards, 3, 3)
+      addTileLayout
     },
     cards
   };
