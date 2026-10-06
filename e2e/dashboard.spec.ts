@@ -425,3 +425,29 @@ test('rich memo formatting survives a later main-view edit', async ({ page }) =>
   await expect(richAgain.locator('b, strong')).toContainText('서식 유지');
   await expect(richAgain).toContainText('확인');
 });
+
+
+test('todo draft survives card movement before it is added', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  const todo = page.locator('.dashboard-card:has(.todo-card-content)').first();
+  const draft = todo.locator('.todo-add textarea');
+  await draft.fill('아직 추가하지 않은 초안');
+
+  const memo = page.locator('.dashboard-card:has(input.card-title[value="자유메모"])');
+  const handle = memo.getByRole('button', { name: '카드 이동' });
+  const todoBox = await todo.boundingBox();
+  const handleBox = await handle.boundingBox();
+  if (!todoBox || !handleBox) throw new Error('card drag targets are not visible');
+
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(todoBox.x + 20, todoBox.y + 20, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+
+  await expect(page.locator('.dashboard-card:has(.todo-card-content)').first().locator('.todo-add textarea'))
+    .toHaveValue('아직 추가하지 않은 초안');
+});
