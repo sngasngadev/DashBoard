@@ -14,7 +14,8 @@ function htmlToText(html: string) {
 
     const block = node.tagName === 'DIV' || node.tagName === 'P';
     const content = Array.from(node.childNodes).map(read).join('');
-    return block ? content + '\n' : content;
+    if (!block) return content;
+    return content.endsWith('\n') ? content : content + '\n';
   };
 
   return Array.from(root.childNodes).map(read).join('').replace(/\n$/, '');
