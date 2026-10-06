@@ -21,7 +21,7 @@ test('capture representative desktop and mobile usage states', async ({ page }) 
     await draft.fill(text);
     await todo.getByRole('button', { name: '추가' }).click();
   }
-  await todo.locator('.todo-check').nth(1).check();
+  await todo.locator('.todo-item').filter({ hasText: '개발팀 확인 사항' }).locator('.todo-check').check();
   await expect(todo.locator('.completed-toggle')).toContainText('완료 1');
 
   await page.locator('.add-card-tile .add-card-action').click();
