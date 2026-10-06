@@ -361,3 +361,42 @@ test('memo-board post-its reorder by drag and always repack without overlap', as
   const reloaded = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
   await expect(reloaded.locator('.postit textarea').first()).toHaveValue('셋째');
 });
+
+
+test('free memo preserves Enter line breaks in main and detail views', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  const memoCard = page.locator('.dashboard-card:has(input.card-title[value="자유메모"])');
+  const simple = memoCard.locator('.simple-memo');
+
+  await simple.fill('첫줄');
+  await simple.press('Enter');
+  await simple.type('둘째줄');
+  await expect(simple).toHaveValue('첫줄\n둘째줄');
+
+  await page.waitForTimeout(500);
+  await page.reload();
+
+  const reloadedSimple = page.locator('.dashboard-card:has(input.card-title[value="자유메모"]) .simple-memo');
+  await expect(reloadedSimple).toHaveValue('첫줄\n둘째줄');
+
+  await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
+  const rich = page.locator('.detail-card .rich-editor');
+  await expect(rich).toBeVisible();
+  await rich.click();
+  await rich.press('End');
+  await rich.press('Enter');
+  await rich.type('셋째줄');
+
+  await expect(rich).toContainText('첫줄');
+  await expect(rich).toContainText('둘째줄');
+  await expect(rich).toContainText('셋째줄');
+
+  await page.waitForTimeout(500);
+  await page.reload();
+  await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
+  const richReloaded = page.locator('.detail-card .rich-editor');
+  await expect(richReloaded).toContainText('셋째줄');
+});
