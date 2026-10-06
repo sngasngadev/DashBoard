@@ -12,7 +12,7 @@ export function CardShell({ card, children, onTitle, onFavorite, onDelete, onOpe
 }) {
   return <section className={`dashboard-card ${detail ? 'detail-card' : ''}`}>
     <header className="card-header">
-      {!detail && <button className="card-drag-handle" type="button" aria-label="카드 이동" title="잡고 이동"><GripVertical size={17}/></button>}
+      {!detail && <button className="card-drag-handle drag-handle" type="button" aria-label="카드 이동" title="잡고 이동"><GripVertical size={17}/></button>}
       <input className="card-title drag-cancel" value={card.title} onChange={e => onTitle(e.target.value)} aria-label="카드 제목" />
       <div className="card-actions drag-cancel">
         {!detail && onOpenDetail && <button className="icon-button subtle" title="크게 보기" aria-label="카드 크게 보기" onClick={onOpenDetail}><Maximize2 size={16}/></button>}
