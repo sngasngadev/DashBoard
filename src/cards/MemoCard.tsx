@@ -2,14 +2,36 @@ import { Bold, Italic, Underline } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { MemoData } from '../types/dashboard';
 
-function stripHtml(html: string) {
-  const el = document.createElement('div');
-  el.innerHTML = html;
-  return el.innerText;
+function htmlToText(html: string) {
+  const root = document.createElement('div');
+  root.innerHTML = html;
+
+  const read = (node: Node): string => {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? '';
+    if (!(node instanceof HTMLElement)) return '';
+
+    if (node.tagName === 'BR') return '\n';
+
+    const block = node.tagName === 'DIV' || node.tagName === 'P';
+    const content = Array.from(node.childNodes).map(read).join('');
+    return block ? content + '\n' : content;
+  };
+
+  return Array.from(root.childNodes).map(read).join('').replace(/\n$/, '');
+}
+
+function escapeHtml(text: string) {
+  return text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }
 
 function textToHtml(text: string) {
-  return text.split('\n').map(line => `<div>${line ? line.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;') : '<br>'}</div>`).join('');
+  return text
+    .split('\n')
+    .map(line => `<div>${line ? escapeHtml(line) : '<br>'}</div>`)
+    .join('');
 }
 
 function command(name: string, value?: string) {
@@ -18,12 +40,20 @@ function command(name: string, value?: string) {
 
 export function MemoCard({ data, onChange, detail = false }: { data: MemoData; onChange: (data: MemoData) => void; detail?: boolean }) {
   const editor = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (detail && editor.current && editor.current.innerHTML !== data.html) editor.current.innerHTML = data.html;
+    if (detail && editor.current && editor.current.innerHTML !== data.html) {
+      editor.current.innerHTML = data.html;
+    }
   }, [data.html, detail]);
 
   if (!detail) {
-    return <textarea className="simple-memo" placeholder="메모를 입력하세요." value={stripHtml(data.html)} onChange={e => onChange({ html: textToHtml(e.target.value) })} />;
+    return <textarea
+      className="simple-memo"
+      placeholder="메모를 입력하세요."
+      value={htmlToText(data.html)}
+      onChange={e => onChange({ html: textToHtml(e.target.value) })}
+    />;
   }
 
   return <div className="rich-memo">
@@ -39,6 +69,13 @@ export function MemoCard({ data, onChange, detail = false }: { data: MemoData; o
       </select>
       <label className="color-control" title="글자 색"><span>글자색</span><input type="color" onChange={e => command('foreColor', e.target.value)} /></label>
     </div>
-    <div ref={editor} className="rich-editor" contentEditable suppressContentEditableWarning data-placeholder="메모를 입력하세요." onInput={e => onChange({ html: e.currentTarget.innerHTML })} />
+    <div
+      ref={editor}
+      className="rich-editor"
+      contentEditable
+      suppressContentEditableWarning
+      data-placeholder="메모를 입력하세요."
+      onInput={e => onChange({ html: e.currentTarget.innerHTML })}
+    />
   </div>;
 }
