@@ -41,6 +41,43 @@ describe('dashboard state', () => {
     expect((state.cards[0].data as { items: unknown[] }).items).toHaveLength(1);
   });
 
+  it('repairs duplicate todo and post-it ids from imported data', () => {
+    const state = normalizeState({
+      version: 1,
+      cards: [
+        {
+          id: 'todo-card',
+          type: 'todo',
+          title: '할 일',
+          layout: { x: 0, y: 0, w: 4, h: 6 },
+          data: {
+            items: [
+              { id: 'dup', text: 'a', done: false },
+              { id: 'dup', text: 'b', done: false }
+            ]
+          }
+        },
+        {
+          id: 'board-card',
+          type: 'memoBoard',
+          title: '메모보드',
+          layout: { x: 4, y: 0, w: 4, h: 6 },
+          data: {
+            notes: [
+              { id: 'dup-note', text: 'a', color: 'yellow' },
+              { id: 'dup-note', text: 'b', color: 'pink' }
+            ]
+          }
+        }
+      ]
+    });
+
+    const todoIds = (state.cards[0].data as { items: { id: string }[] }).items.map(item => item.id);
+    const noteIds = (state.cards[1].data as { notes: { id: string }[] }).notes.map(note => note.id);
+    expect(new Set(todoIds).size).toBe(todoIds.length);
+    expect(new Set(noteIds).size).toBe(noteIds.length);
+  });
+
   it('preserves unknown card payloads for future card types', () => {
     const state = normalizeState({
       version: 1,
