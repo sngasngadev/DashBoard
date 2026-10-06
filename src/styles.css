@@ -126,3 +126,8 @@ textarea { resize: none; }
   .top-header { padding: 16px 16px 10px; gap: 10px; }.dashboard-title { font-size: 22px; }.dashboard-description { font-size: 13px; }.save-status, .settings-button span { display:none; }.tabs { top: 76px; padding: 0 16px 9px; }.workspace { padding: 15px 16px 35px; }.card-body { padding: 12px; }.detail-wrapper { margin: 0; }.detail-card { min-height: calc(100vh - 170px); }.detail-card .card-body { padding: 14px; }.todo-add { grid-template-columns: 1fr; }.todo-add .button { width: 100%; }.postit-grid, .detail-mode .postit-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }.postit, .detail-mode .postit { min-height: 150px; }
 }
 @media (max-width: 430px) { .postit-grid, .detail-mode .postit-grid { grid-template-columns: 1fr; } }
+
+.detail-mode .postit-grid { display:flex; flex-wrap:wrap; align-items:flex-start; gap:16px; }
+.detail-mode .postit { position:relative; flex:0 0 auto; min-width:180px; max-width:600px; min-height:140px; max-height:500px; }
+.postit-resize-handle { position:absolute; right:4px; bottom:4px; width:24px; height:24px; border:0; background:transparent; color:rgba(71,84,103,.55); display:flex; align-items:center; justify-content:center; cursor:nwse-resize; border-radius:6px; }
+.postit-resize-handle:hover { background:rgba(255,255,255,.35); color:#344054; }
