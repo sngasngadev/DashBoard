@@ -1,5 +1,4 @@
 import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
 import type { TodoData, TodoItem } from '../types/dashboard';
 import { makeId } from '../lib/id';
 
@@ -9,14 +8,12 @@ export function TodoCard({ data, onChange, onAskDelete, detail = false }: {
   onAskDelete: (item: TodoItem) => void;
   detail?: boolean;
 }) {
-  const [draft, setDraft] = useState('');
   const active = data.items.filter(i => !i.done);
   const completed = data.items.filter(i => i.done);
 
   const add = () => {
-    if (!draft.trim()) return;
-    onChange({ ...data, items: [...data.items, { id: makeId('todo'), text: draft.trimEnd(), done: false, createdAt: new Date().toISOString() }] });
-    setDraft('');
+    if (!data.draft.trim()) return;
+    onChange({ ...data, draft: '', items: [...data.items, { id: makeId('todo'), text: data.draft.trimEnd(), done: false, createdAt: new Date().toISOString() }] });
   };
 
   const patch = (id: string, patch: Partial<TodoItem>) => onChange({ ...data, items: data.items.map(item => item.id === id ? { ...item, ...patch } : item) });
@@ -39,8 +36,8 @@ export function TodoCard({ data, onChange, onAskDelete, detail = false }: {
       {!data.completedCollapsed && <div className="todo-list completed-list">{completed.map(renderItem)}</div>}
     </div>}
     <div className="todo-add">
-      <textarea value={draft} onChange={e => setDraft(e.target.value)} rows={detail ? 3 : 2} />
-      <button className="button primary" onClick={add} disabled={!draft.trim()}><Plus size={17}/> 추가</button>
+      <textarea value={data.draft} onChange={e => onChange({ ...data, draft: e.target.value })} rows={detail ? 3 : 2} />
+      <button className="button primary" onClick={add} disabled={!data.draft.trim()}><Plus size={17}/> 추가</button>
     </div>
   </div>;
 }
