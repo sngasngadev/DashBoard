@@ -142,7 +142,7 @@ test('dragging a card forward pushes the others and auto-fills gaps naturally', 
 });
 
 
-test('auto compact off keeps other cards fixed during collisions', async ({ page }) => {
+test('auto compact off keeps cards still while dragging, then pushes only on drop', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -177,9 +177,13 @@ test('auto compact off keeps other cards fixed during collisions', async ({ page
   await page.waitForTimeout(150);
 
   const todoAfter = await todoCard.boundingBox();
-  if (!todoAfter) throw new Error('todo card disappeared after drag');
-  expect(Math.abs(todoAfter.x - todoBefore.x)).toBeLessThan(2);
-  expect(Math.abs(todoAfter.y - todoBefore.y)).toBeLessThan(2);
+  const boardAfter = await boardCard.boundingBox();
+  if (!todoAfter || !boardAfter) throw new Error('cards disappeared after drag');
+
+  // No live pushing while hovering, but the occupied card is displaced after drop.
+  expect(Math.abs(todoAfter.x - todoBefore.x) + Math.abs(todoAfter.y - todoBefore.y)).toBeGreaterThan(5);
+  expect(Math.abs(boardAfter.x - todoBefore.x)).toBeLessThan(8);
+  expect(Math.abs(boardAfter.y - todoBefore.y)).toBeLessThan(8);
 });
 
 
