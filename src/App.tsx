@@ -6,7 +6,7 @@ import 'react-resizable/css/styles.css';
 import './styles.css';
 import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, TodoData, TodoItem } from './types/dashboard';
 import { loadState, saveState, exportBackup, importBackupWeb } from './lib/storage';
-import { compactCards, GRID_COLS, nextCardPosition, pushCardsFromDrop, reorderAndCompactCards, repairOverlaps, safeAddTilePosition } from './lib/layout';
+import { GRID_COLS, repairOverlaps, resolveAddTileDrop, resolveCardDrop, resolveCardResize, resolveCompact, safeAddTilePosition } from './lib/layout';
 import { createCard, createInitialState } from './lib/state';
 import { AddCardModal } from './components/AddCardModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -94,48 +94,53 @@ export default function App() {
 
   const applyDragStop = (layout: Layout[], movedId: string, target: Layout) => {
     setState(prev => {
-      const add = layout.find(item => item.i === ADD_ID);
-      let addTileLayout = add
-        ? { x: add.x, y: add.y, w: 3, h: 3 }
+      const addLayout = layout.find(item => item.i === ADD_ID);
+      const droppedAdd = addLayout
+        ? { x: addLayout.x, y: addLayout.y, w: 3, h: 3 }
         : prev.settings.addTileLayout;
 
-      if (movedId === ADD_ID) {
-        addTileLayout = safeAddTilePosition(prev.cards, addTileLayout);
-        return { ...prev, settings: { ...prev.settings, addTileLayout } };
-      }
+      const result = movedId === ADD_ID
+        ? resolveAddTileDrop(prev.cards, droppedAdd)
+        : resolveCardDrop(
+            prev.cards,
+            droppedAdd,
+            movedId,
+            { x: target.x, y: target.y, w: target.w, h: target.h },
+            prev.settings.autoCompact
+          );
 
-      if (prev.settings.autoCompact) {
-        const cards = reorderAndCompactCards(prev.cards, movedId, target);
-        addTileLayout = nextCardPosition(cards, 3, 3);
-        return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
-      }
-
-      const moved = prev.cards.find(card => card.id === movedId);
-      if (!moved) return prev;
-      const cards = pushCardsFromDrop(prev.cards, movedId, { x: target.x, y: target.y, w: moved.layout.w, h: moved.layout.h });
-      addTileLayout = safeAddTilePosition(cards, addTileLayout);
-      return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
+      return {
+        ...prev,
+        cards: result.cards,
+        settings: { ...prev.settings, addTileLayout: result.addTileLayout }
+      };
     });
-    // react-grid-layout keeps its own transient drag layout. Even when the
-    // persisted safe layout is identical to the previous state, remount the
-    // grid so the visual position is forced back to the collision-free state.
+
+    // react-grid-layout keeps transient drag coordinates internally.
+    // Remount after drop so the visual layout always matches persisted state.
     setLayoutRevision(value => value + 1);
   };
 
   const applyResizeStop = (layout: Layout[]) => {
     setState(prev => {
-      let cards = repairOverlaps(prev.cards.map(card => {
-        const next = layout.find(item => item.i === card.id);
-        return next ? { ...card, layout: { x: next.x, y: next.y, w: next.w, h: next.h } } : card;
-      }));
-      if (prev.settings.autoCompact) cards = compactCards(cards);
-      const preferredAdd = prev.settings.autoCompact ? nextCardPosition(cards, 3, 3) : prev.settings.addTileLayout;
+      const updatedLayouts = new Map(layout
+        .filter(item => item.i !== ADD_ID)
+        .map(item => [item.i, { x: item.x, y: item.y, w: item.w, h: item.h }]));
+
+      const result = resolveCardResize(
+        prev.cards,
+        prev.settings.addTileLayout,
+        updatedLayouts,
+        prev.settings.autoCompact
+      );
+
       return {
         ...prev,
-        cards,
-        settings: { ...prev.settings, addTileLayout: safeAddTilePosition(cards, preferredAdd) }
+        cards: result.cards,
+        settings: { ...prev.settings, addTileLayout: result.addTileLayout }
       };
     });
+
     setLayoutRevision(value => value + 1);
   };
 
@@ -216,13 +221,15 @@ export default function App() {
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
     <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
       onToggleAuto={autoCompact => setState(prev => {
-        const cards = autoCompact ? compactCards(prev.cards) : repairOverlaps(prev.cards);
-        const preferredAdd = autoCompact ? nextCardPosition(cards, 3, 3) : prev.settings.addTileLayout;
-        return { ...prev, settings: { ...prev.settings, autoCompact, addTileLayout: safeAddTilePosition(cards, preferredAdd) }, cards };
+        const cards = autoCompact ? resolveCompact(prev.cards).cards : repairOverlaps(prev.cards);
+        const addTileLayout = autoCompact
+          ? resolveCompact(prev.cards).addTileLayout
+          : safeAddTilePosition(cards, prev.settings.addTileLayout);
+        return { ...prev, settings: { ...prev.settings, autoCompact, addTileLayout }, cards };
       })}
       onCompact={() => setState(prev => {
-        const cards = compactCards(prev.cards);
-        return { ...prev, cards, settings: { ...prev.settings, addTileLayout: safeAddTilePosition(cards, nextCardPosition(cards, 3, 3)) } };
+        const result = resolveCompact(prev.cards);
+        return { ...prev, cards: result.cards, settings: { ...prev.settings, addTileLayout: result.addTileLayout } };
       })}
       onExport={() => exportBackup(state)} onImport={doImport} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
