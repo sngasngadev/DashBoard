@@ -5,7 +5,6 @@
   "description": "Single-file offline personal dashboard",
   "scripts": {
     "dev": "vite",
-    "dev:web": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run src",
     "test:watch": "vitest",
@@ -13,7 +12,6 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
     "lucide-react": "latest",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -31,6 +29,7 @@
     "typescript": "latest",
     "vite": "latest",
     "vitest": "latest",
-    "vite-plugin-singlefile": "latest"
+    "vite-plugin-singlefile": "latest",
+    "@vitejs/plugin-react": "latest"
   }
 }
