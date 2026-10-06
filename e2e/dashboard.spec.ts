@@ -240,3 +240,45 @@ test('final layout never overlaps, including the add-card tile', async ({ page }
   await page.reload();
   await assertNoOverlap();
 });
+
+
+test('dropping add-card tile exactly on a card handle never overlaps', async ({ page }) => {
+  const assertNoOverlap = async () => {
+    const boxes = await page.locator('.react-grid-layout > div').evaluateAll(elements =>
+      elements.map(element => {
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
+      })
+    );
+    for (let i = 0; i < boxes.length; i += 1) {
+      for (let j = i + 1; j < boxes.length; j += 1) {
+        const a = boxes[i];
+        const b = boxes[j];
+        const overlap = a.x < b.x + b.w - 1 && a.x + a.w > b.x + 1 && a.y < b.y + b.h - 1 && a.y + a.h > b.y + 1;
+        expect(overlap, `items ${i} and ${j} overlap`).toBe(false);
+      }
+    }
+  };
+
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  const targetHandle = page.locator('.dashboard-card').first().getByRole('button', { name: '카드 이동' });
+  const targetHandleBox = await targetHandle.boundingBox();
+  const addHandle = page.getByRole('button', { name: '카드 추가 타일 이동' });
+  const addHandleBox = await addHandle.boundingBox();
+  if (!targetHandleBox || !addHandleBox) throw new Error('drag handles are not visible');
+
+  await page.mouse.move(addHandleBox.x + addHandleBox.width / 2, addHandleBox.y + addHandleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(targetHandleBox.x + targetHandleBox.width / 2, targetHandleBox.y + targetHandleBox.height / 2, { steps: 16 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+
+  await assertNoOverlap();
+
+  await page.waitForTimeout(500);
+  await page.reload();
+  await assertNoOverlap();
+});
