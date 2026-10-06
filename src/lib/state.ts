@@ -11,7 +11,7 @@ const defaults: Record<CardType, { title: string; w: number; h: number }> = {
 };
 
 function initialData(type: CardType): TodoData | MemoData | MemoBoardData {
-  if (type === 'todo') return { items: [], completedCollapsed: false };
+  if (type === 'todo') return { items: [], completedCollapsed: false, draft: '' };
   if (type === 'memo') return { html: '' };
   return { notes: [] };
 }
@@ -69,7 +69,7 @@ function normalizeTodo(value: unknown): TodoData {
       createdAt: str(item.createdAt, now())
     }];
   }) : [];
-  return { items, completedCollapsed: Boolean(raw.completedCollapsed) };
+  return { items, completedCollapsed: Boolean(raw.completedCollapsed), draft: str(raw.draft) };
 }
 
 function normalizeMemo(value: unknown): MemoData {
