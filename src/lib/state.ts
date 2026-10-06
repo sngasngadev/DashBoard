@@ -88,7 +88,9 @@ function normalizeBoard(value: unknown): MemoBoardData {
       text: str(note.text),
       color,
       width: typeof note.width === 'number' && Number.isFinite(note.width) ? Math.max(180, Math.min(600, Math.round(note.width))) : undefined,
-      height: typeof note.height === 'number' && Number.isFinite(note.height) ? Math.max(140, Math.min(500, Math.round(note.height))) : undefined
+      height: typeof note.height === 'number' && Number.isFinite(note.height) ? Math.max(140, Math.min(500, Math.round(note.height))) : undefined,
+      x: typeof note.x === 'number' && Number.isFinite(note.x) ? Math.max(0, Math.round(note.x)) : undefined,
+      y: typeof note.y === 'number' && Number.isFinite(note.y) ? Math.max(0, Math.round(note.y)) : undefined
     }];
   }) : [];
   return { notes };
