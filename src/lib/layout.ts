@@ -91,12 +91,25 @@ export function reorderAndCompactCards(cards: CardRecord[], movedId: string, tar
   if (!moved) return compactCards(cards, cols);
 
   const others = currentOrder.filter(card => card.id !== movedId);
-  const targetKey = target.y * cols + target.x;
+  const droppedLayout: CardLayout = {
+    x: Math.max(0, Math.min(cols - Math.min(moved.layout.w, cols), target.x)),
+    y: Math.max(0, target.y),
+    w: Math.min(moved.layout.w, cols),
+    h: moved.layout.h
+  };
 
-  let insertAt = others.findIndex(card => {
-    const cardKey = card.layout.y * cols + card.layout.x;
-    return cardKey >= targetKey;
-  });
+  // If the dropped card actually covers an existing card, treat that card as
+  // the insertion target. This feels much more natural than comparing only
+  // the dropped card's top-left grid cell.
+  let insertAt = others.findIndex(card => overlaps(droppedLayout, card.layout));
+
+  if (insertAt < 0) {
+    const targetKey = target.y * cols + target.x;
+    insertAt = others.findIndex(card => {
+      const cardKey = card.layout.y * cols + card.layout.x;
+      return cardKey >= targetKey;
+    });
+  }
   if (insertAt < 0) insertAt = others.length;
 
   const orderedIds = [
