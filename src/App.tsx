@@ -170,7 +170,7 @@ export default function App() {
     <main className="workspace" ref={gridRef}>
       {selected === 'main' ? (
         mobile ? <div className="mobile-card-stack">{state.cards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button></div>
-        : <GridLayout className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableHandle=".drag-handle" draggableCancel="textarea, input, button:not(.drag-handle), select, [contenteditable='true']" preventCollision allowOverlap={false} compactType={null}
+        : <GridLayout className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableHandle=".drag-handle" draggableCancel="textarea, input, button:not(.drag-handle), select, [contenteditable='true']" preventCollision={false} allowOverlap={false} compactType={null}
             onLayoutChange={layout => applyLayout(layout, false)}
             onDragStop={(layout, _oldItem, newItem) => applyLayout(layout, true, newItem.i)}
             onResizeStop={(layout, _oldItem, newItem) => applyLayout(layout, true, newItem.i)}>
