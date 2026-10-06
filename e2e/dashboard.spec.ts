@@ -374,13 +374,13 @@ test('free memo preserves Enter line breaks in main and detail views', async ({ 
   await simple.fill('첫줄');
   await simple.press('Enter');
   await simple.type('둘째줄');
-  await expect(simple).toHaveValue('첫줄\n둘째줄');
+  await expect(simple).toHaveJSProperty('innerText', '첫줄\n둘째줄');
 
   await page.waitForTimeout(500);
   await page.reload();
 
   const reloadedSimple = page.locator('.dashboard-card:has(input.card-title[value="자유메모"]) .simple-memo');
-  await expect(reloadedSimple).toHaveValue('첫줄\n둘째줄');
+  await expect(reloadedSimple).toHaveJSProperty('innerText', '첫줄\n둘째줄');
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
   const rich = page.locator('.detail-card .rich-editor');
@@ -399,4 +399,29 @@ test('free memo preserves Enter line breaks in main and detail views', async ({ 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
   const richReloaded = page.locator('.detail-card .rich-editor');
   await expect(richReloaded).toContainText('셋째줄');
+});
+
+
+test('rich memo formatting survives a later main-view edit', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
+  const rich = page.locator('.detail-card .rich-editor');
+  await rich.fill('서식 유지');
+  await rich.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
+  await page.getByLabel('굵게').click();
+  await expect(rich.locator('b, strong')).toContainText('서식 유지');
+
+  await page.locator('.tabs').getByRole('button', { name: '메인' }).click();
+  const simple = page.locator('.dashboard-card:has(input.card-title[value="자유메모"]) .simple-memo');
+  await simple.click();
+  await simple.press('End');
+  await simple.type(' 확인');
+
+  await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
+  const richAgain = page.locator('.detail-card .rich-editor');
+  await expect(richAgain.locator('b, strong')).toContainText('서식 유지');
+  await expect(richAgain).toContainText('확인');
 });
