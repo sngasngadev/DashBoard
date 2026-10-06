@@ -54,6 +54,7 @@ export interface DashboardState {
   };
   settings: {
     autoCompact: boolean;
+    addTileLayout: CardLayout;
   };
   cards: CardRecord[];
 }
