@@ -116,9 +116,9 @@ test('dragging a card forward pushes the others and auto-fills gaps naturally', 
   expect(boardBoxAfter.y).toBeLessThanOrEqual(todoBoxAfter.y + 2);
   expect(boardBoxAfter.x).toBeLessThan(todoBoxAfter.x);
 
-  const workspaceBox = await page.locator('.workspace').boundingBox();
-  if (!workspaceBox) throw new Error('workspace is not visible');
-  expect(Math.abs(boardBoxAfter.x - workspaceBox.x)).toBeLessThan(8);
+  const gridBox = await page.locator('.react-grid-layout').boundingBox();
+  if (!gridBox) throw new Error('grid is not visible');
+  expect(Math.abs(boardBoxAfter.x - gridBox.x)).toBeLessThan(8);
 
   await page.waitForTimeout(500);
   await page.reload();
@@ -130,5 +130,7 @@ test('dragging a card forward pushes the others and auto-fills gaps naturally', 
   if (!boardReloadedBox || !todoReloadedBox) throw new Error('reloaded cards are not visible');
 
   expect(boardReloadedBox.x).toBeLessThan(todoReloadedBox.x);
-  expect(Math.abs(boardReloadedBox.x - workspaceBox.x)).toBeLessThan(8);
+  const reloadedGridBox = await page.locator('.react-grid-layout').boundingBox();
+  if (!reloadedGridBox) throw new Error('reloaded grid is not visible');
+  expect(Math.abs(boardReloadedBox.x - reloadedGridBox.x)).toBeLessThan(8);
 });
