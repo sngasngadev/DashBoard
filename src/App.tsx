@@ -5,7 +5,7 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './styles.css';
 import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, TodoData, TodoItem } from './types/dashboard';
-import { loadState, saveState, exportBackup, importBackupElectron, importBackupWeb } from './lib/storage';
+import { loadState, saveState, exportBackup, importBackupWeb } from './lib/storage';
 import { compactCards, GRID_COLS, nextCardPosition } from './lib/layout';
 import { createCard, createInitialState } from './lib/state';
 import { AddCardModal } from './components/AddCardModal';
@@ -38,7 +38,6 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
-  const [dataLocation, setDataLocation] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   const gridRef = useRef<HTMLDivElement>(null);
   const width = useContainerWidth(gridRef);
@@ -46,8 +45,7 @@ export default function App() {
 
   useEffect(() => {
     loadState().then(value => { setState(value); setLoaded(true); });
-    if (window.dashboardStore) window.dashboardStore.getDataLocation().then(setDataLocation).catch(() => undefined);
-    if ('serviceWorker' in navigator && !window.dashboardStore) navigator.serviceWorker.register('./sw.js').catch(() => undefined);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -127,16 +125,6 @@ export default function App() {
     </CardShell>;
 
   const doImport = async () => {
-    if (window.dashboardStore) {
-      const imported = await importBackupElectron();
-      if (imported) setConfirm({
-        title: '백업을 불러올까요?',
-        message: '현재 대시보드 내용과 배치가 백업 파일의 내용으로 바뀝니다.',
-        confirmLabel: '불러오기',
-        action: () => setState(imported)
-      });
-      return;
-    }
     const input = document.createElement('input');
     input.type = 'file'; input.accept = '.json,application/json';
     input.onchange = async () => {
@@ -180,7 +168,7 @@ export default function App() {
     </main>
 
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
-    <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} dataLocation={dataLocation} onClose={() => setSettingsOpen(false)}
+    <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
       onToggleAuto={autoCompact => setState(prev => ({ ...prev, settings: { ...prev.settings, autoCompact }, cards: autoCompact ? compactCards(prev.cards) : prev.cards }))}
       onCompact={() => setState(prev => ({ ...prev, cards: compactCards(prev.cards) }))}
       onExport={() => exportBackup(state)} onImport={doImport} />
