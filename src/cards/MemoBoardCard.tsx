@@ -1,4 +1,5 @@
 import { Grip, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import type { BoardNote, MemoBoardData, NoteColor } from '../types/dashboard';
 import { makeId } from '../lib/id';
 
@@ -10,6 +11,7 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
   onAskDelete: (note: BoardNote) => void;
   detail?: boolean;
 }) {
+  const [openPalette, setOpenPalette] = useState<string | null>(null);
   const add = () => onChange({ ...data, notes: [...data.notes, { id: makeId('note'), text: '', color: colors[data.notes.length % colors.length], width: 240, height: 190 }] });
   const patch = (id: string, patchValue: Partial<BoardNote>) => onChange({ ...data, notes: data.notes.map(note => note.id === id ? { ...note, ...patchValue } : note) });
 
@@ -22,8 +24,27 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
       >
         <textarea value={note.text} onChange={e => patch(note.id, { text: e.target.value })} />
         <div className="postit-footer">
-          <div className="color-dots">{colors.map(color => <button key={color} className={`color-dot ${color} ${note.color === color ? 'selected' : ''}`} aria-label={`${color} 색상`} onClick={() => patch(note.id, { color })} />)}</div>
-          <button className="icon-button subtle" aria-label="포스트잇 삭제" onClick={() => onAskDelete(note)}><Trash2 size={14}/></button>
+          <div className="postit-actions">
+            <div className={`color-picker ${openPalette === note.id ? 'open' : ''}`}>
+              <button
+                type="button"
+                className={`color-dot current ${note.color}`}
+                aria-label="포스트잇 색상 변경"
+                title="색상 변경"
+                onClick={() => setOpenPalette(openPalette === note.id ? null : note.id)}
+              />
+              {openPalette === note.id && <div className="color-palette">
+                {colors.map(color => <button
+                  key={color}
+                  type="button"
+                  className={`color-dot ${color} ${note.color === color ? 'selected' : ''}`}
+                  aria-label={`${color} 색상`}
+                  onClick={() => { patch(note.id, { color }); setOpenPalette(null); }}
+                />)}
+              </div>}
+            </div>
+            <button className="icon-button subtle" aria-label="포스트잇 삭제" onClick={() => onAskDelete(note)}><Trash2 size={14}/></button>
+          </div>
         </div>
         {detail && <button
           type="button"
