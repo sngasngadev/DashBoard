@@ -1,4 +1,4 @@
-import { Grip, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { BoardNote, MemoBoardData, NoteColor } from '../types/dashboard';
 import { makeId } from '../lib/id';
@@ -20,7 +20,7 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
       {data.notes.map(note => <div
         key={note.id}
         className={`postit ${note.color}`}
-        style={detail ? { width: note.width ?? 240, height: note.height ?? 190 } : undefined}
+        style={{ width: note.width ?? 240, height: note.height ?? 190 }}
       >
         <textarea value={note.text} onChange={e => patch(note.id, { text: e.target.value })} />
         <div className="postit-footer">
@@ -46,7 +46,7 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
             <button className="icon-button subtle" aria-label="포스트잇 삭제" onClick={() => onAskDelete(note)}><Trash2 size={14}/></button>
           </div>
         </div>
-        {detail && <button
+        <button
           type="button"
           className="postit-resize-handle"
           aria-label="포스트잇 크기 조절"
@@ -75,7 +75,7 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
             window.addEventListener('pointerup', stop);
             window.addEventListener('pointercancel', stop);
           }}
-        ><Grip size={14}/></button>}
+        ><span aria-hidden="true" /></button>
       </div>)}
       <button className="add-postit" onClick={add}><Plus size={18}/> 포스트잇</button>
     </div>
