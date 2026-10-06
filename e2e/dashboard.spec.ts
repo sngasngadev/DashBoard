@@ -83,3 +83,52 @@ test('mobile keeps the desktop layout safe and stacks cards', async ({ page }) =
   await page.locator('.tabs').getByRole('button', { name: '할 일' }).click();
   await expect(page.locator('.detail-card .todo-card-content')).toBeVisible();
 });
+
+
+test('dragging a card forward pushes the others and auto-fills gaps naturally', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  await page.locator('.add-card-tile .add-card-action').click();
+  await page.getByRole('button', { name: /메모보드/ }).click();
+
+  const boardCard = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
+  const todoCard = page.locator('.dashboard-card:has(.todo-card-content)').first();
+  const boardHandle = boardCard.getByRole('button', { name: '카드 이동' });
+
+  const boardBoxBefore = await boardCard.boundingBox();
+  const todoBoxBefore = await todoCard.boundingBox();
+  const handleBox = await boardHandle.boundingBox();
+  if (!boardBoxBefore || !todoBoxBefore || !handleBox) throw new Error('drag targets are not visible');
+
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(todoBoxBefore.x + 35, todoBoxBefore.y + 25, { steps: 12 });
+  await page.mouse.up();
+
+  await page.waitForTimeout(250);
+
+  const boardBoxAfter = await boardCard.boundingBox();
+  const todoBoxAfter = await todoCard.boundingBox();
+  if (!boardBoxAfter || !todoBoxAfter) throw new Error('cards disappeared after drag');
+
+  expect(boardBoxAfter.y).toBeLessThanOrEqual(todoBoxAfter.y + 2);
+  expect(boardBoxAfter.x).toBeLessThan(todoBoxAfter.x);
+
+  const workspaceBox = await page.locator('.workspace').boundingBox();
+  if (!workspaceBox) throw new Error('workspace is not visible');
+  expect(Math.abs(boardBoxAfter.x - workspaceBox.x)).toBeLessThan(8);
+
+  await page.waitForTimeout(500);
+  await page.reload();
+
+  const boardReloaded = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
+  const todoReloaded = page.locator('.dashboard-card:has(.todo-card-content)').first();
+  const boardReloadedBox = await boardReloaded.boundingBox();
+  const todoReloadedBox = await todoReloaded.boundingBox();
+  if (!boardReloadedBox || !todoReloadedBox) throw new Error('reloaded cards are not visible');
+
+  expect(boardReloadedBox.x).toBeLessThan(todoReloadedBox.x);
+  expect(Math.abs(boardReloadedBox.x - workspaceBox.x)).toBeLessThan(8);
+});
