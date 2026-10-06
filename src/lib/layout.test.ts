@@ -32,6 +32,13 @@ describe('layout packing', () => {
     expect(result.find(c => c.id === 'b')?.layout).toEqual({ x:8,y:0,w:4,h:4 });
   });
 
+  it('treats partial overlap as dropping onto that card', () => {
+    const cards = [card('a', 0, 0), card('b', 4, 0), card('c', 8, 0)];
+    const result = reorderAndCompactCards(cards, 'c', { x: 1, y: 0 });
+    expect(result.find(c => c.id === 'c')?.layout).toEqual({ x:0,y:0,w:4,h:4 });
+    expect(result.find(c => c.id === 'a')?.layout).toEqual({ x:4,y:0,w:4,h:4 });
+  });
+
   it('fills the earliest available space after reordering mixed card sizes', () => {
     const cards = [card('a', 0, 0, 5, 5), card('b', 5, 0, 4, 4), card('c', 0, 8, 3, 3)];
     const result = reorderAndCompactCards(cards, 'c', { x: 0, y: 0 });
