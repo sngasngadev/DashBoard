@@ -1,11 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear());
-});
-
 test('desktop user can manage the dashboard naturally', async ({ page }) => {
   await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
 
   const title = page.getByLabel('대시보드 제목');
   await expect(title).toHaveValue('나의 대시보드');
@@ -75,6 +73,8 @@ test('desktop user can manage the dashboard naturally', async ({ page }) => {
 test('mobile keeps the desktop layout safe and stacks cards', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
   await expect(page.locator('.mobile-card-stack')).toBeVisible();
   await expect(page.locator('.react-grid-layout')).toHaveCount(0);
   await expect(page.locator('.mobile-card-stack .dashboard-card')).toHaveCount(2);
