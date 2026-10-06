@@ -62,7 +62,7 @@ test('desktop user can manage the dashboard naturally', async ({ page }) => {
   await expect(page.locator('.dashboard-card:has(input.card-title[value="메모보드"])')).toBeVisible();
 
   await boardDelete.click();
-  await page.getByRole('button', { name: '삭제' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '삭제', exact: true }).click();
   await expect(page.locator('.dashboard-card:has(input.card-title[value="메모보드"])')).toHaveCount(0);
 
   await page.waitForTimeout(500);
