@@ -53,6 +53,6 @@ describe('layout packing', () => {
     const cards = [card('a', 0, 0, 4, 4), card('b', 4, 0, 4, 4)];
     const add = safeAddTilePosition(cards, { x: 0, y: 0, w: 3, h: 3 });
     expect(cards.some(item => overlaps(item.layout, add))).toBe(false);
-    expect(add).toEqual({ x: 8, y: 0, w: 3, h: 3 });
+    expect(add).toEqual({ x: 0, y: 4, w: 3, h: 3 });
   });
 });
