@@ -2,7 +2,7 @@ import type { CardLayout, CardRecord } from '../types/dashboard';
 
 export const GRID_COLS = 12;
 
-function overlaps(a: CardLayout, b: CardLayout) {
+export function overlaps(a: CardLayout, b: CardLayout) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
@@ -14,6 +14,49 @@ export function firstFreePosition(placed: CardLayout[], w: number, h: number, co
     }
   }
   return { x: 0, y: 2000, w, h };
+}
+
+export function nearestFreePosition(placed: CardLayout[], preferred: CardLayout, cols = GRID_COLS): CardLayout {
+  const w = Math.min(preferred.w, cols);
+  const h = preferred.h;
+  const startX = Math.max(0, Math.min(cols - w, preferred.x));
+  const startY = Math.max(0, preferred.y);
+  const direct = { x: startX, y: startY, w, h };
+  if (!placed.some(item => overlaps(direct, item))) return direct;
+
+  for (let radius = 1; radius < 2000; radius += 1) {
+    const minY = Math.max(0, startY - radius);
+    const maxY = startY + radius;
+    for (let y = minY; y <= maxY; y += 1) {
+      for (let x = 0; x <= cols - w; x += 1) {
+        if (Math.abs(x - startX) + Math.abs(y - startY) !== radius) continue;
+        const candidate = { x, y, w, h };
+        if (!placed.some(item => overlaps(candidate, item))) return candidate;
+      }
+    }
+  }
+  return firstFreePosition(placed, w, h, cols);
+}
+
+export function repairOverlaps(cards: CardRecord[], cols = GRID_COLS): CardRecord[] {
+  const placed: CardLayout[] = [];
+  return cards.map(card => {
+    const preferred = {
+      x: Math.max(0, Math.min(cols - Math.min(card.layout.w, cols), card.layout.x)),
+      y: Math.max(0, card.layout.y),
+      w: Math.min(card.layout.w, cols),
+      h: card.layout.h
+    };
+    const layout = placed.some(item => overlaps(preferred, item))
+      ? nearestFreePosition(placed, preferred, cols)
+      : preferred;
+    placed.push(layout);
+    return { ...card, layout };
+  });
+}
+
+export function safeAddTilePosition(cards: CardRecord[], preferred: CardLayout, cols = GRID_COLS): CardLayout {
+  return nearestFreePosition(cards.map(card => card.layout), { ...preferred, w: 3, h: 3 }, cols);
 }
 
 export function packCardsInOrder(cards: CardRecord[], orderedIds: string[], cols = GRID_COLS): CardRecord[] {
