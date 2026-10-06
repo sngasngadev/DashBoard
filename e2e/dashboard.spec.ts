@@ -134,3 +134,44 @@ test('dragging a card forward pushes the others and auto-fills gaps naturally', 
   if (!reloadedGridBox) throw new Error('reloaded grid is not visible');
   expect(Math.abs(boardReloadedBox.x - reloadedGridBox.x)).toBeLessThan(8);
 });
+
+
+test('auto compact off keeps other cards fixed during collisions', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  await page.locator('.add-card-tile .add-card-action').click();
+  await page.getByRole('button', { name: /메모보드/ }).click();
+
+  await page.getByRole('button', { name: '설정' }).click();
+  const autoCompact = page.locator('.switch input[type="checkbox"]');
+  await autoCompact.uncheck();
+  await page.locator('.settings-modal').getByLabel('닫기').click();
+
+  const todoCard = page.locator('.dashboard-card:has(.todo-card-content)').first();
+  const boardCard = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
+  const boardHandle = boardCard.getByRole('button', { name: '카드 이동' });
+
+  const todoBefore = await todoCard.boundingBox();
+  const handleBox = await boardHandle.boundingBox();
+  if (!todoBefore || !handleBox) throw new Error('drag targets are not visible');
+
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(todoBefore.x + todoBefore.width / 2, todoBefore.y + todoBefore.height / 2, { steps: 12 });
+  await page.waitForTimeout(150);
+
+  const todoDuring = await todoCard.boundingBox();
+  if (!todoDuring) throw new Error('todo card disappeared during drag');
+  expect(Math.abs(todoDuring.x - todoBefore.x)).toBeLessThan(2);
+  expect(Math.abs(todoDuring.y - todoBefore.y)).toBeLessThan(2);
+
+  await page.mouse.up();
+  await page.waitForTimeout(150);
+
+  const todoAfter = await todoCard.boundingBox();
+  if (!todoAfter) throw new Error('todo card disappeared after drag');
+  expect(Math.abs(todoAfter.x - todoBefore.x)).toBeLessThan(2);
+  expect(Math.abs(todoAfter.y - todoBefore.y)).toBeLessThan(2);
+});
