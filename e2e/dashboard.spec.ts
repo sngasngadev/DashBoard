@@ -246,6 +246,7 @@ test('final layout never overlaps, including the add-card tile', async ({ page }
 
   await page.waitForTimeout(500);
   await page.reload();
+  await page.waitForTimeout(300);
   await assertNoOverlap();
 });
 
@@ -292,6 +293,7 @@ test('dropping add-card tile exactly on a card handle never overlaps', async ({ 
 
   await page.waitForTimeout(500);
   await page.reload();
+  await page.waitForTimeout(300);
   await assertNoOverlap();
 });
 
