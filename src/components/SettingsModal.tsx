@@ -1,9 +1,8 @@
-import { Download, FolderOpen, LayoutGrid, Upload, X } from 'lucide-react';
+import { Download, LayoutGrid, Upload, X } from 'lucide-react';
 
 interface Props {
   open: boolean;
   autoCompact: boolean;
-  dataLocation: string;
   onClose: () => void;
   onToggleAuto: (value: boolean) => void;
   onCompact: () => void;
@@ -29,9 +28,8 @@ export function SettingsModal(props: Props) {
           <button className="button secondary wide" onClick={props.onCompact}><LayoutGrid size={17}/> 빈 공간 채우기</button>
         </section>
         <section className="settings-section">
-          <h3>백업</h3>
-          <p className="setting-help">PC 포터블 버전에서는 데이터가 실행 파일과 같은 폴더에 저장됩니다. 저장할 때 이전 파일도 자동 백업합니다.</p>
-          {props.dataLocation && <div className="data-location"><FolderOpen size={16}/><span>{props.dataLocation}</span></div>}
+          <h3>데이터와 다른 PC로 이동</h3>
+          <p className="setting-help">이 PC에서는 브라우저 저장공간에 자동 저장됩니다. 다른 컴퓨터에서 이어서 쓰려면 백업 파일을 내보낸 뒤 새 컴퓨터에서 불러오세요.</p>
           <div className="button-row">
             <button className="button secondary" onClick={props.onExport}><Download size={17}/> 백업 내보내기</button>
             <button className="button secondary" onClick={props.onImport}><Upload size={17}/> 백업 불러오기</button>
