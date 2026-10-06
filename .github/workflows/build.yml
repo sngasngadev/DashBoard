@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: dashboard-main-build
+  cancel-in-progress: true
+
 jobs:
   test-web:
     runs-on: ubuntu-latest
@@ -16,6 +20,8 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
 
   windows-portable:
     runs-on: windows-latest
