@@ -6,7 +6,7 @@ import 'react-resizable/css/styles.css';
 import './styles.css';
 import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, TodoData, TodoItem } from './types/dashboard';
 import { loadState, saveState, exportBackup, importBackupWeb } from './lib/storage';
-import { compactCards, GRID_COLS, nextCardPosition, reorderAndCompactCards } from './lib/layout';
+import { compactCards, GRID_COLS, nextCardPosition, reorderAndCompactCards, repairOverlaps, safeAddTilePosition } from './lib/layout';
 import { createCard, createInitialState } from './lib/state';
 import { AddCardModal } from './components/AddCardModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -98,6 +98,7 @@ export default function App() {
         : prev.settings.addTileLayout;
 
       if (movedId === ADD_ID) {
+        addTileLayout = safeAddTilePosition(prev.cards, addTileLayout);
         return { ...prev, settings: { ...prev.settings, addTileLayout } };
       }
 
@@ -107,25 +108,27 @@ export default function App() {
         return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
       }
 
-      const cards = prev.cards.map(card => {
+      const cards = repairOverlaps(prev.cards.map(card => {
         const next = layout.find(item => item.i === card.id);
         return next ? { ...card, layout: { x: next.x, y: next.y, w: next.w, h: next.h } } : card;
-      });
+      }));
+      addTileLayout = safeAddTilePosition(cards, addTileLayout);
       return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
     });
   };
 
   const applyResizeStop = (layout: Layout[]) => {
     setState(prev => {
-      let cards = prev.cards.map(card => {
+      let cards = repairOverlaps(prev.cards.map(card => {
         const next = layout.find(item => item.i === card.id);
         return next ? { ...card, layout: { x: next.x, y: next.y, w: next.w, h: next.h } } : card;
-      });
+      }));
       if (prev.settings.autoCompact) cards = compactCards(cards);
+      const preferredAdd = prev.settings.autoCompact ? nextCardPosition(cards, 3, 3) : prev.settings.addTileLayout;
       return {
         ...prev,
         cards,
-        settings: { ...prev.settings, addTileLayout: prev.settings.autoCompact ? nextCardPosition(cards, 3, 3) : prev.settings.addTileLayout }
+        settings: { ...prev.settings, addTileLayout: safeAddTilePosition(cards, preferredAdd) }
       };
     });
   };
@@ -205,12 +208,13 @@ export default function App() {
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
     <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
       onToggleAuto={autoCompact => setState(prev => {
-        const cards = autoCompact ? compactCards(prev.cards) : prev.cards;
-        return { ...prev, settings: { ...prev.settings, autoCompact, addTileLayout: autoCompact ? nextCardPosition(cards, 3, 3) : prev.settings.addTileLayout }, cards };
+        const cards = autoCompact ? compactCards(prev.cards) : repairOverlaps(prev.cards);
+        const preferredAdd = autoCompact ? nextCardPosition(cards, 3, 3) : prev.settings.addTileLayout;
+        return { ...prev, settings: { ...prev.settings, autoCompact, addTileLayout: safeAddTilePosition(cards, preferredAdd) }, cards };
       })}
       onCompact={() => setState(prev => {
         const cards = compactCards(prev.cards);
-        return { ...prev, cards, settings: { ...prev.settings, addTileLayout: nextCardPosition(cards, 3, 3) } };
+        return { ...prev, cards, settings: { ...prev.settings, addTileLayout: safeAddTilePosition(cards, nextCardPosition(cards, 3, 3)) } };
       })}
       onExport={() => exportBackup(state)} onImport={doImport} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
