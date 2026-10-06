@@ -176,6 +176,8 @@ export default function App() {
 
   const selectedCard = state.cards.find(card => card.id === selected);
 
+  if (!loaded) return <div className="app-shell loading-shell" aria-label="대시보드 불러오는 중" />;
+
   return <div className="app-shell">
     <header className="top-header">
       <div className="title-block">
