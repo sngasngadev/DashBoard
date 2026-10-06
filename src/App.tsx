@@ -45,7 +45,6 @@ export default function App() {
 
   useEffect(() => {
     loadState().then(value => { setState(value); setLoaded(true); });
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => undefined);
   }, []);
 
   useEffect(() => {
