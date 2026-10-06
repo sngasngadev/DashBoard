@@ -30,7 +30,18 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
 
   const packed = useMemo(() => packNotes(data.notes, canvasWidth), [data.notes, canvasWidth]);
   const packedById = useMemo(() => new Map(packed.map(item => [item.id, item])), [packed]);
-  const canvasHeight = Math.max(150, ...packed.map(item => item.y + item.height), 0);
+
+  const dropPreview = useMemo(() => {
+    if (!draggingId || !dragTarget) return null;
+    const reordered = reorderNotes(data.notes, draggingId, dragTarget.id, dragTarget.after);
+    return packNotes(reordered, canvasWidth).find(item => item.id === draggingId) ?? null;
+  }, [canvasWidth, data.notes, draggingId, dragTarget]);
+
+  const canvasHeight = Math.max(
+    150,
+    ...packed.map(item => item.y + item.height),
+    dropPreview ? dropPreview.y + dropPreview.height : 0
+  );
 
   const add = () => onChange({
     ...data,
@@ -48,6 +59,16 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
 
   return <div className={`memo-board ${detail ? 'detail-mode' : ''}`}>
     <div className="postit-canvas" ref={canvasRef} style={{ height: canvasHeight }}>
+      {dropPreview && <div
+        className="postit-drop-preview"
+        aria-hidden="true"
+        style={{
+          width: dropPreview.width,
+          height: dropPreview.height,
+          left: dropPreview.x,
+          top: dropPreview.y
+        }}
+      />}
       {data.notes.map(note => {
         const layout = packedById.get(note.id);
         if (!layout) return null;
