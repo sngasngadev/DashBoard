@@ -24,7 +24,7 @@ export function SettingsModal(props: Props) {
           <h3>카드 배치</h3>
           <div className="setting-row">
             <div><strong>빈 공간 자동 채우기</strong><span>카드를 이동·추가·삭제한 뒤 위쪽과 왼쪽부터 자동 정리합니다.</span></div>
-            <label className="switch"><input type="checkbox" checked={props.autoCompact} onChange={e => props.onToggleAuto(e.target.checked)} /><span /></label>
+            <label className="switch" title="빈 공간 자동 채우기"><input aria-label="빈 공간 자동 채우기" type="checkbox" checked={props.autoCompact} onChange={e => props.onToggleAuto(e.target.checked)} /><span aria-hidden="true" /></label>
           </div>
           <button className="button secondary wide" onClick={props.onCompact}><LayoutGrid size={17}/> 빈 공간 채우기</button>
         </section>
