@@ -178,3 +178,14 @@ textarea { resize: none; }
 .postit-resize-handle span::after { width:6px; height:6px; right:9px; bottom:9px; }
 .postit-resize-handle:hover span::before,
 .postit-resize-handle:hover span::after { border-color:#344054; }
+
+/* Packed memo-board canvas: note order determines position; free placement is not stored. */
+.postit-canvas { position:relative; width:100%; min-height:150px; transition:height .15s ease; }
+.postit-canvas .postit { position:absolute; transition:left .16s ease, top .16s ease, box-shadow .12s ease, transform .12s ease; }
+.postit-canvas .postit.dragging { opacity:.72; transform:scale(.985); box-shadow:0 8px 20px rgba(16,24,40,.16); z-index:4; }
+.postit-canvas .postit.drag-target { box-shadow:0 0 0 2px rgba(37,99,235,.28), 0 4px 12px rgba(16,24,40,.1); }
+.postit-move-handle { position:absolute; top:5px; left:5px; width:25px; height:25px; border:0; background:rgba(255,255,255,.28); color:rgba(71,84,103,.62); border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:grab; z-index:2; }
+.postit-move-handle:hover { background:rgba(255,255,255,.52); color:#344054; }
+.postit-move-handle:active { cursor:grabbing; }
+.postit-canvas .postit textarea { padding-top:22px; }
+.postit-canvas + .add-postit { width:100%; min-height:48px; margin-top:10px; }
