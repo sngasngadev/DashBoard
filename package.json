@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview --host 127.0.0.1",
-    "dist:win": "npm run build && electron-builder --win portable"
+    "dist:win": "npm run build && electron-builder --win portable",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -34,7 +35,8 @@
     "typescript": "latest",
     "vite": "latest",
     "vitest": "latest",
-    "wait-on": "latest"
+    "wait-on": "latest",
+    "@playwright/test": "latest"
   },
   "build": {
     "appId": "com.sngasnga.dashboard",
