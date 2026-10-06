@@ -129,12 +129,26 @@ export default function App() {
   const doImport = async () => {
     if (window.dashboardStore) {
       const imported = await importBackupElectron();
-      if (imported) setState(imported);
+      if (imported) setConfirm({
+        title: '백업을 불러올까요?',
+        message: '현재 대시보드 내용과 배치가 백업 파일의 내용으로 바뀝니다.',
+        confirmLabel: '불러오기',
+        action: () => setState(imported)
+      });
       return;
     }
     const input = document.createElement('input');
     input.type = 'file'; input.accept = '.json,application/json';
-    input.onchange = async () => { if (input.files?.[0]) setState(await importBackupWeb(input.files[0])); };
+    input.onchange = async () => {
+      if (!input.files?.[0]) return;
+      const imported = await importBackupWeb(input.files[0]);
+      setConfirm({
+        title: '백업을 불러올까요?',
+        message: '현재 대시보드 내용과 배치가 백업 파일의 내용으로 바뀝니다.',
+        confirmLabel: '불러오기',
+        action: () => setState(imported)
+      });
+    };
     input.click();
   };
 
@@ -167,7 +181,7 @@ export default function App() {
 
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
     <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} dataLocation={dataLocation} onClose={() => setSettingsOpen(false)}
-      onToggleAuto={autoCompact => setState(prev => ({ ...prev, settings: { ...prev.settings, autoCompact } }))}
+      onToggleAuto={autoCompact => setState(prev => ({ ...prev, settings: { ...prev.settings, autoCompact }, cards: autoCompact ? compactCards(prev.cards) : prev.cards }))}
       onCompact={() => setState(prev => ({ ...prev, cards: compactCards(prev.cards) }))}
       onExport={() => exportBackup(state)} onImport={doImport} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
