@@ -39,7 +39,7 @@ export function TodoCard({ data, onChange, onAskDelete, detail = false }: {
       {!data.completedCollapsed && <div className="todo-list completed-list">{completed.map(renderItem)}</div>}
     </div>}
     <div className="todo-add">
-      <textarea placeholder="새 할 일을 입력하세요. Enter는 줄바꿈입니다." value={draft} onChange={e => setDraft(e.target.value)} rows={detail ? 3 : 2} />
+      <textarea value={draft} onChange={e => setDraft(e.target.value)} rows={detail ? 3 : 2} />
       <button className="button primary" onClick={add} disabled={!draft.trim()}><Plus size={17}/> 추가</button>
     </div>
   </div>;
