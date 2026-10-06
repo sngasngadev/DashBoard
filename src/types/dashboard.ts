@@ -17,6 +17,7 @@ export interface TodoItem {
 export interface TodoData {
   items: TodoItem[];
   completedCollapsed: boolean;
+  draft: string;
 }
 
 export interface MemoData {
