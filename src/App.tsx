@@ -221,11 +221,25 @@ export default function App() {
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
     <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
       onToggleAuto={autoCompact => setState(prev => {
-        const cards = autoCompact ? resolveCompact(prev.cards).cards : repairOverlaps(prev.cards);
-        const addTileLayout = autoCompact
-          ? resolveCompact(prev.cards).addTileLayout
-          : safeAddTilePosition(cards, prev.settings.addTileLayout);
-        return { ...prev, settings: { ...prev.settings, autoCompact, addTileLayout }, cards };
+        if (autoCompact) {
+          const result = resolveCompact(prev.cards);
+          return {
+            ...prev,
+            cards: result.cards,
+            settings: { ...prev.settings, autoCompact, addTileLayout: result.addTileLayout }
+          };
+        }
+
+        const cards = repairOverlaps(prev.cards);
+        return {
+          ...prev,
+          cards,
+          settings: {
+            ...prev.settings,
+            autoCompact,
+            addTileLayout: safeAddTilePosition(cards, prev.settings.addTileLayout)
+          }
+        };
       })}
       onCompact={() => setState(prev => {
         const result = resolveCompact(prev.cards);
