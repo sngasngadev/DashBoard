@@ -60,10 +60,14 @@ function normalizeLayout(value: unknown): CardLayout {
 
 function normalizeTodo(value: unknown): TodoData {
   const raw = isObject(value) ? value : {};
+  const seen = new Set<string>();
   const items: TodoItem[] = Array.isArray(raw.items) ? raw.items.flatMap((item): TodoItem[] => {
     if (!isObject(item)) return [];
+    let id = str(item.id, makeId('todo'));
+    if (seen.has(id)) id = makeId('todo');
+    seen.add(id);
     return [{
-      id: str(item.id, makeId('todo')),
+      id,
       text: str(item.text),
       done: Boolean(item.done),
       createdAt: str(item.createdAt, now())
@@ -80,11 +84,15 @@ function normalizeMemo(value: unknown): MemoData {
 const noteColors: NoteColor[] = ['yellow', 'pink', 'blue', 'green', 'lavender'];
 function normalizeBoard(value: unknown): MemoBoardData {
   const raw = isObject(value) ? value : {};
+  const seen = new Set<string>();
   const notes: BoardNote[] = Array.isArray(raw.notes) ? raw.notes.flatMap((note): BoardNote[] => {
     if (!isObject(note)) return [];
     const color = noteColors.includes(note.color as NoteColor) ? note.color as NoteColor : 'yellow';
+    let id = str(note.id, makeId('note'));
+    if (seen.has(id)) id = makeId('note');
+    seen.add(id);
     return [{
-      id: str(note.id, makeId('note')),
+      id,
       text: str(note.text),
       color,
       width: typeof note.width === 'number' && Number.isFinite(note.width) ? Math.max(180, Math.min(600, Math.round(note.width))) : undefined,
