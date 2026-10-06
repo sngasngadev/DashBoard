@@ -40,9 +40,15 @@
     "appId": "com.sngasnga.dashboard",
     "productName": "DashBoard",
     "asar": true,
-    "files": ["dist/**/*", "electron/**/*", "package.json"],
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
     "win": {
-      "target": ["portable"],
+      "target": [
+        "portable"
+      ],
       "artifactName": "DashBoard-${version}-Portable.${ext}"
     },
     "portable": {

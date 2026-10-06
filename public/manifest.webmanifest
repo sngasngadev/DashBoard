@@ -1,0 +1,9 @@
+{
+  "name": "DashBoard",
+  "short_name": "DashBoard",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f2f4f7",
+  "theme_color": "#2563eb",
+  "icons": []
+}

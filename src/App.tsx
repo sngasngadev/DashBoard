@@ -1,0 +1,175 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import GridLayout, { type Layout } from 'react-grid-layout';
+import { Plus, Settings } from 'lucide-react';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
+import './styles.css';
+import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, TodoData, TodoItem } from './types/dashboard';
+import { loadState, saveState, exportBackup, importBackupElectron, importBackupWeb } from './lib/storage';
+import { compactCards, GRID_COLS, nextCardPosition } from './lib/layout';
+import { createCard, createInitialState } from './lib/state';
+import { AddCardModal } from './components/AddCardModal';
+import { SettingsModal } from './components/SettingsModal';
+import { ConfirmDialog } from './components/ConfirmDialog';
+import { CardShell } from './components/CardShell';
+import { TodoCard } from './cards/TodoCard';
+import { MemoCard } from './cards/MemoCard';
+import { MemoBoardCard } from './cards/MemoBoardCard';
+
+const ADD_ID = '__add_card__';
+
+type ConfirmState = null | { title: string; message: string; action: () => void; confirmLabel?: string };
+
+function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>) {
+  const [width, setWidth] = useState(1200);
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new ResizeObserver(entries => setWidth(entries[0].contentRect.width));
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width;
+}
+
+export default function App() {
+  const [state, setState] = useState<DashboardState>(() => createInitialState());
+  const [loaded, setLoaded] = useState(false);
+  const [selected, setSelected] = useState<string>('main');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const [dataLocation, setDataLocation] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+  const gridRef = useRef<HTMLDivElement>(null);
+  const width = useContainerWidth(gridRef);
+  const mobile = width < 760;
+
+  useEffect(() => {
+    loadState().then(value => { setState(value); setLoaded(true); });
+    if (window.dashboardStore) window.dashboardStore.getDataLocation().then(setDataLocation).catch(() => undefined);
+    if ('serviceWorker' in navigator && !window.dashboardStore) navigator.serviceWorker.register('./sw.js').catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    setSaveStatus('saving');
+    const id = window.setTimeout(() => saveState(state).finally(() => setSaveStatus('saved')), 350);
+    return () => window.clearTimeout(id);
+  }, [state, loaded]);
+
+  useEffect(() => {
+    if (selected !== 'main' && !state.cards.some(card => card.id === selected)) setSelected('main');
+  }, [selected, state.cards]);
+
+  const updateCard = useCallback((id: string, patch: Partial<CardRecord>) => {
+    setState(prev => ({ ...prev, cards: prev.cards.map(card => card.id === id ? { ...card, ...patch, updatedAt: new Date().toISOString() } : card) }));
+  }, []);
+
+  const updateData = useCallback((id: string, data: CardRecord['data']) => updateCard(id, { data }), [updateCard]);
+
+  const askCardDelete = (card: CardRecord) => {
+    if (card.favorite) return;
+    setConfirm({ title: '카드를 삭제할까요?', message: `“${card.title || '제목 없음'}” 카드와 카드 안의 내용이 함께 삭제됩니다.`, action: () => setState(prev => {
+      const cards = prev.cards.filter(item => item.id !== card.id);
+      return { ...prev, cards: prev.settings.autoCompact ? compactCards(cards) : cards };
+    }) });
+  };
+
+  const addCard = (type: CardType) => {
+    setState(prev => {
+      let cards = [...prev.cards, createCard(type, prev.cards)];
+      if (prev.settings.autoCompact) cards = compactCards(cards);
+      return { ...prev, cards };
+    });
+    setAddOpen(false);
+  };
+
+  const layouts: Layout[] = useMemo(() => {
+    const base = state.cards.map(card => ({ i: card.id, ...card.layout, minW: 3, minH: 4 }));
+    const addPos = nextCardPosition(state.cards, 3, 3);
+    return [...base, { i: ADD_ID, ...addPos, static: true }];
+  }, [state.cards]);
+
+  const applyLayout = (layout: Layout[], compactAfter: boolean) => {
+    setState(prev => {
+      let cards = prev.cards.map(card => {
+        const next = layout.find(item => item.i === card.id);
+        return next ? { ...card, layout: { x: next.x, y: next.y, w: next.w, h: next.h } } : card;
+      });
+      if (compactAfter && prev.settings.autoCompact) cards = compactCards(cards);
+      return { ...prev, cards };
+    });
+  };
+
+  const askTodoDelete = (card: CardRecord, item: TodoItem) => setConfirm({ title: '할 일을 삭제할까요?', message: item.text.split('\n')[0] || '이 항목을 삭제합니다.', action: () => {
+    const data = card.data as TodoData;
+    updateData(card.id, { ...data, items: data.items.filter(i => i.id !== item.id) });
+  } });
+
+  const askNoteDelete = (card: CardRecord, note: BoardNote) => setConfirm({ title: '포스트잇을 삭제할까요?', message: note.text.split('\n')[0] || '빈 포스트잇을 삭제합니다.', action: () => {
+    const data = card.data as MemoBoardData;
+    updateData(card.id, { ...data, notes: data.notes.filter(i => i.id !== note.id) });
+  } });
+
+  const renderContent = (card: CardRecord, detail = false) => {
+    if (card.type === 'todo') return <TodoCard data={card.data as TodoData} detail={detail} onChange={data => updateData(card.id, data)} onAskDelete={item => askTodoDelete(card, item)} />;
+    if (card.type === 'memo') return <MemoCard data={card.data as MemoData} detail={detail} onChange={data => updateData(card.id, data)} />;
+    if (card.type === 'memoBoard') return <MemoBoardCard data={card.data as MemoBoardData} detail={detail} onChange={data => updateData(card.id, data)} onAskDelete={note => askNoteDelete(card, note)} />;
+    return <div className="unsupported">지원되지 않는 카드 형식입니다.</div>;
+  };
+
+  const shell = (card: CardRecord, detail = false) => <CardShell key={card.id} card={card} detail={detail}
+    onTitle={title => updateCard(card.id, { title })}
+    onFavorite={() => updateCard(card.id, { favorite: !card.favorite })}
+    onDelete={() => askCardDelete(card)}
+    onOpenDetail={() => setSelected(card.id)}>
+      {renderContent(card, detail)}
+    </CardShell>;
+
+  const doImport = async () => {
+    if (window.dashboardStore) {
+      const imported = await importBackupElectron();
+      if (imported) setState(imported);
+      return;
+    }
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.json,application/json';
+    input.onchange = async () => { if (input.files?.[0]) setState(await importBackupWeb(input.files[0])); };
+    input.click();
+  };
+
+  const selectedCard = state.cards.find(card => card.id === selected);
+
+  return <div className="app-shell">
+    <header className="top-header">
+      <div className="title-block">
+        <input className="dashboard-title" value={state.meta.title} onChange={e => setState(prev => ({ ...prev, meta: { ...prev.meta, title: e.target.value } }))} aria-label="대시보드 제목" />
+        <textarea className="dashboard-description" rows={1} value={state.meta.description} onChange={e => setState(prev => ({ ...prev, meta: { ...prev.meta, description: e.target.value } }))} aria-label="대시보드 설명" />
+      </div>
+      <div className="header-actions"><span className={`save-status ${saveStatus}`}>{saveStatus === 'saving' ? '저장 중…' : '저장됨'}</span><button className="settings-button" onClick={() => setSettingsOpen(true)}><Settings size={18}/><span>설정</span></button></div>
+    </header>
+
+    <nav className="tabs" aria-label="대시보드 탭">
+      <button className={selected === 'main' ? 'active' : ''} onClick={() => setSelected('main')}>메인</button>
+      {state.cards.map(card => <button key={card.id} className={selected === card.id ? 'active' : ''} onClick={() => setSelected(card.id)}>{card.favorite && '★ '}{card.title || '제목 없음'}</button>)}
+    </nav>
+
+    <main className="workspace" ref={gridRef}>
+      {selected === 'main' ? (
+        mobile ? <div className="mobile-card-stack">{state.cards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button></div>
+        : <GridLayout className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableCancel=".drag-cancel, textarea, input, button, select, [contenteditable='true']" preventCollision allowOverlap={false} compactType={null}
+            onLayoutChange={layout => applyLayout(layout, false)} onDragStop={layout => applyLayout(layout, true)} onResizeStop={layout => applyLayout(layout, true)}>
+            {state.cards.map(card => <div key={card.id}>{shell(card)}</div>)}
+            <button key={ADD_ID} className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button>
+          </GridLayout>
+      ) : selectedCard ? <div className="detail-wrapper">{shell(selectedCard, true)}</div> : null}
+    </main>
+
+    <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
+    <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} dataLocation={dataLocation} onClose={() => setSettingsOpen(false)}
+      onToggleAuto={autoCompact => setState(prev => ({ ...prev, settings: { ...prev.settings, autoCompact } }))}
+      onCompact={() => setState(prev => ({ ...prev, cards: compactCards(prev.cards) }))}
+      onExport={() => exportBackup(state)} onImport={doImport} />
+    <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
+  </div>;
+}

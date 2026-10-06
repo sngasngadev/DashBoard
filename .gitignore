@@ -1,0 +1,6 @@
+node_modules/
+dist/
+release/
+*.log
+dashboard-data.json
+dashboard-data.backup.json
