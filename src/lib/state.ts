@@ -37,7 +37,7 @@ export function createInitialState(): DashboardState {
   return {
     version: 1,
     meta: { title: '나의 대시보드', description: '필요한 정보와 할 일을 한 화면에서 관리하세요.' },
-    settings: { autoCompact: true },
+    settings: { autoCompact: true, addTileLayout: nextCardPosition([first, second], 3, 3) },
     cards: [first, second]
   };
 }
@@ -130,7 +130,12 @@ export function normalizeState(raw: unknown): DashboardState {
       title: str(meta.title, '나의 대시보드') || '나의 대시보드',
       description: str(meta.description)
     },
-    settings: { autoCompact: settings.autoCompact === undefined ? true : Boolean(settings.autoCompact) },
+    settings: {
+      autoCompact: settings.autoCompact === undefined ? true : Boolean(settings.autoCompact),
+      addTileLayout: isObject(settings.addTileLayout)
+        ? normalizeLayout(settings.addTileLayout)
+        : nextCardPosition(cards, 3, 3)
+    },
     cards
   };
 }
