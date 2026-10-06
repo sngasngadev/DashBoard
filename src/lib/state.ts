@@ -83,7 +83,13 @@ function normalizeBoard(value: unknown): MemoBoardData {
   const notes: BoardNote[] = Array.isArray(raw.notes) ? raw.notes.flatMap((note): BoardNote[] => {
     if (!isObject(note)) return [];
     const color = noteColors.includes(note.color as NoteColor) ? note.color as NoteColor : 'yellow';
-    return [{ id: str(note.id, makeId('note')), text: str(note.text), color }];
+    return [{
+      id: str(note.id, makeId('note')),
+      text: str(note.text),
+      color,
+      width: typeof note.width === 'number' && Number.isFinite(note.width) ? Math.max(180, Math.min(600, Math.round(note.width))) : undefined,
+      height: typeof note.height === 'number' && Number.isFinite(note.height) ? Math.max(140, Math.min(500, Math.round(note.height))) : undefined
+    }];
   }) : [];
   return { notes };
 }
