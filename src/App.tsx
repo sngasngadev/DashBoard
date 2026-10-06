@@ -6,7 +6,7 @@ import 'react-resizable/css/styles.css';
 import './styles.css';
 import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, TodoData, TodoItem } from './types/dashboard';
 import { loadState, saveState, exportBackup, importBackupWeb } from './lib/storage';
-import { compactCards, GRID_COLS, nextCardPosition, reorderAndCompactCards, repairOverlaps, safeAddTilePosition } from './lib/layout';
+import { compactCards, GRID_COLS, nextCardPosition, pushCardsFromDrop, reorderAndCompactCards, repairOverlaps, safeAddTilePosition } from './lib/layout';
 import { createCard, createInitialState } from './lib/state';
 import { AddCardModal } from './components/AddCardModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -109,10 +109,9 @@ export default function App() {
         return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
       }
 
-      const cards = repairOverlaps(prev.cards.map(card => {
-        const next = layout.find(item => item.i === card.id);
-        return next ? { ...card, layout: { x: next.x, y: next.y, w: next.w, h: next.h } } : card;
-      }));
+      const moved = prev.cards.find(card => card.id === movedId);
+      if (!moved) return prev;
+      const cards = pushCardsFromDrop(prev.cards, movedId, { x: target.x, y: target.y, w: moved.layout.w, h: moved.layout.h });
       addTileLayout = safeAddTilePosition(cards, addTileLayout);
       return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
     });
