@@ -34,7 +34,9 @@ test('desktop user can manage the dashboard naturally', async ({ page }) => {
   const boardCard = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
   await boardCard.getByRole('button', { name: '포스트잇' }).click();
   await boardCard.locator('.postit textarea').fill('확인할 메모');
-  await boardCard.locator('.color-dot.pink').click();
+  await boardCard.getByRole('button', { name: '포스트잇 색상 변경' }).click();
+  await expect(boardCard.locator('.color-palette')).toBeVisible();
+  await boardCard.getByRole('button', { name: 'pink 색상' }).click();
   await expect(boardCard.locator('.postit')).toHaveClass(/pink/);
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
