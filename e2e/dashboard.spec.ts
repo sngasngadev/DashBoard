@@ -105,8 +105,14 @@ test('dragging a card forward pushes the others and auto-fills gaps naturally', 
   await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(todoBoxBefore.x + 35, todoBoxBefore.y + 25, { steps: 12 });
-  await page.mouse.up();
+  await page.waitForTimeout(120);
 
+  const todoDuring = await todoCard.boundingBox();
+  if (!todoDuring) throw new Error('todo card disappeared during drag');
+  expect(Math.abs(todoDuring.x - todoBoxBefore.x)).toBeLessThan(2);
+  expect(Math.abs(todoDuring.y - todoBoxBefore.y)).toBeLessThan(2);
+
+  await page.mouse.up();
   await page.waitForTimeout(250);
 
   const boardBoxAfter = await boardCard.boundingBox();
