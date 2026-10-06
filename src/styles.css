@@ -33,8 +33,10 @@ textarea { resize: none; }
 .tabs button.active { background: white; color: var(--blue); font-weight: 700; box-shadow: 0 1px 3px rgba(16,24,40,.08); }
 .workspace { padding: 20px 30px 50px; min-height: calc(100vh - 150px); }
 .dashboard-card { height: 100%; background: var(--card); border: 1px solid #e4e8ef; border-radius: 15px; box-shadow: 0 2px 8px rgba(16,24,40,.055); overflow: hidden; display: flex; flex-direction: column; }
-.card-header { min-height: 53px; display: flex; align-items: center; gap: 8px; padding: 9px 11px 9px 15px; border-bottom: 1px solid #eef1f5; cursor: grab; }
-.card-header:active { cursor: grabbing; }
+.card-header { min-height: 53px; display: flex; align-items: center; gap: 8px; padding: 9px 11px 9px 10px; border-bottom: 1px solid #eef1f5; }
+.card-drag-handle, .add-card-drag-handle { border: 0; background: transparent; color: #98a2b3; border-radius: 7px; width: 28px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: grab; flex: 0 0 auto; }
+.card-drag-handle:hover, .add-card-drag-handle:hover { color: #475467; background: #f2f4f7; }
+.card-drag-handle:active, .add-card-drag-handle:active { cursor: grabbing; }
 .card-title { min-width: 0; flex: 1; border: 1px solid transparent; border-radius: 6px; padding: 5px 6px; margin-left: -6px; outline: none; background: transparent; color: #1d2939; font-weight: 700; }
 .card-title:hover { border-color: #e3e8ef; background: #fafbfc; }
 .card-title:focus { border-color: #a9c3fa; background: #fff; }
@@ -46,8 +48,11 @@ textarea { resize: none; }
 .icon-button.favorite { color: #f0a500; }
 .card-body { min-height: 0; flex: 1; padding: 14px; overflow: auto; }
 .react-resizable-handle::after { border-color: #9db7ea !important; width: 8px !important; height: 8px !important; }
-.add-card-tile { height: 100%; min-height: 122px; border: 1.5px dashed #b9c3d2; border-radius: 15px; background: rgba(255,255,255,.45); color: #667085; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
-.add-card-tile:hover { border-color: #7ea4f5; color: var(--blue); background: #f8fbff; }
+.add-card-tile { height: 100%; min-height: 122px; border: 1.5px dashed #b9c3d2; border-radius: 15px; background: rgba(255,255,255,.45); color: #667085; position: relative; overflow: hidden; }
+.add-card-tile:hover { border-color: #7ea4f5; background: #f8fbff; }
+.add-card-drag-handle { position: absolute; top: 8px; left: 8px; z-index: 2; }
+.add-card-action { width: 100%; height: 100%; min-height: 122px; border: 0; background: transparent; color: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 36px 12px 12px; }
+.add-card-action:hover { color: var(--blue); }
 .add-card-tile strong { font-size: 14px; }
 .add-card-tile span { font-size: 12px; }
 .todo-card-content { height: 100%; display: flex; flex-direction: column; gap: 10px; }
