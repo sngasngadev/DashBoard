@@ -197,3 +197,14 @@ textarea { resize: none; }
   bottom:6px;
   width:4px;
 }
+
+.postit-drop-preview {
+  position:absolute;
+  border:2px dashed rgba(37,99,235,.75);
+  border-radius:7px;
+  background:rgba(37,99,235,.08);
+  pointer-events:none;
+  z-index:1;
+  transition:left .12s ease, top .12s ease, width .12s ease, height .12s ease;
+}
+.postit-canvas .postit.dragging { z-index:5; }
