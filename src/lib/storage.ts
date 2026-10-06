@@ -1,26 +1,92 @@
 import type { DashboardState } from '../types/dashboard';
 import { normalizeState } from './state';
 
-const KEY = 'dashboard-state-v1';
+const DB_NAME = 'dashboard-db';
+const DB_VERSION = 1;
+const STORE_NAME = 'state';
+const STATE_KEY = 'dashboard-state';
+const LEGACY_KEY = 'dashboard-state-v1';
 
-export async function loadState(): Promise<DashboardState> {
-  if (window.dashboardStore) return normalizeState(await window.dashboardStore.load());
+function openDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function idbGet(): Promise<unknown> {
+  const db = await openDb();
   try {
-    const raw = localStorage.getItem(KEY);
-    return normalizeState(raw ? JSON.parse(raw) : null);
-  } catch {
-    return normalizeState(null);
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const request = tx.objectStore(STORE_NAME).get(STATE_KEY);
+      request.onsuccess = () => resolve(request.result ?? null);
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    db.close();
   }
 }
 
+async function idbSet(value: DashboardState): Promise<void> {
+  const db = await openDb();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put(value, STATE_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+function loadLegacyState(): DashboardState | null {
+  try {
+    const raw = localStorage.getItem(LEGACY_KEY);
+    return raw ? normalizeState(JSON.parse(raw)) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadState(): Promise<DashboardState> {
+  try {
+    const stored = await idbGet();
+    if (stored) return normalizeState(stored);
+
+    const legacy = loadLegacyState();
+    if (legacy) {
+      await idbSet(legacy);
+      localStorage.removeItem(LEGACY_KEY);
+      return legacy;
+    }
+  } catch {
+    const legacy = loadLegacyState();
+    if (legacy) return legacy;
+  }
+
+  return normalizeState(null);
+}
+
 export async function saveState(state: DashboardState) {
-  if (window.dashboardStore) return window.dashboardStore.save(state);
-  localStorage.setItem(KEY, JSON.stringify(state));
-  return true;
+  try {
+    await idbSet(state);
+    return true;
+  } catch {
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(state));
+    return true;
+  }
 }
 
 export async function exportBackup(state: DashboardState) {
-  if (window.dashboardStore) return window.dashboardStore.exportBackup(state);
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -33,10 +99,4 @@ export async function exportBackup(state: DashboardState) {
 
 export async function importBackupWeb(file: File) {
   return normalizeState(JSON.parse(await file.text()));
-}
-
-export async function importBackupElectron() {
-  if (!window.dashboardStore) return null;
-  const raw = await window.dashboardStore.importBackup();
-  return raw ? normalizeState(raw) : null;
 }
