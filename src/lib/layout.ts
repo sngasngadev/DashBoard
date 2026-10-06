@@ -110,3 +110,40 @@ export function reorderAndCompactCards(cards: CardRecord[], movedId: string, tar
 export function nextCardPosition(cards: CardRecord[], w: number, h: number) {
   return firstFreePosition(cards.map(card => card.layout), w, h);
 }
+
+
+export function pushCardsFromDrop(cards: CardRecord[], movedId: string, target: CardLayout, cols = GRID_COLS): CardRecord[] {
+  const moved = cards.find(card => card.id === movedId);
+  if (!moved) return repairOverlaps(cards, cols);
+
+  const movedLayout: CardLayout = {
+    x: Math.max(0, Math.min(cols - Math.min(target.w, cols), target.x)),
+    y: Math.max(0, target.y),
+    w: Math.min(target.w, cols),
+    h: target.h
+  };
+
+  const others = cards.filter(card => card.id !== movedId);
+  const fixed: CardRecord[] = [];
+  const displaced: CardRecord[] = [];
+
+  for (const card of others) {
+    if (overlaps(movedLayout, card.layout)) displaced.push(card);
+    else fixed.push(card);
+  }
+
+  const occupied: CardLayout[] = [movedLayout, ...fixed.map(card => card.layout)];
+  const displacedLayouts = new Map<string, CardLayout>();
+
+  for (const card of displaced.sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x)) {
+    const next = nearestFreePosition(occupied, card.layout, cols);
+    occupied.push(next);
+    displacedLayouts.set(card.id, next);
+  }
+
+  return cards.map(card => {
+    if (card.id === movedId) return { ...card, layout: movedLayout };
+    const next = displacedLayouts.get(card.id);
+    return next ? { ...card, layout: next } : card;
+  });
+}
