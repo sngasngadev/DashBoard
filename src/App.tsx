@@ -69,19 +69,48 @@ export default function App() {
   const askCardDelete = (card: CardRecord) => {
     if (card.favorite) return;
     setConfirm({ title: '카드를 삭제할까요?', message: `“${card.title || '제목 없음'}” 카드와 카드 안의 내용이 함께 삭제됩니다.`, action: () => setState(prev => {
-      const cards = prev.cards.filter(item => item.id !== card.id);
-      return { ...prev, cards: prev.settings.autoCompact ? compactCards(cards) : cards };
+      const remaining = prev.cards.filter(item => item.id !== card.id);
+      if (prev.settings.autoCompact) {
+        const result = resolveCompact(remaining);
+        return {
+          ...prev,
+          cards: result.cards,
+          settings: { ...prev.settings, addTileLayout: result.addTileLayout }
+        };
+      }
+
+      const cards = repairOverlaps(remaining);
+      return {
+        ...prev,
+        cards,
+        settings: {
+          ...prev.settings,
+          addTileLayout: safeAddTilePosition(cards, prev.settings.addTileLayout)
+        }
+      };
     }) });
   };
 
   const addCard = (type: CardType) => {
     setState(prev => {
-      let cards = [...prev.cards, createCard(type, prev.cards)];
-      if (prev.settings.autoCompact) cards = compactCards(cards);
+      const appended = [...prev.cards, createCard(type, prev.cards)];
+      if (prev.settings.autoCompact) {
+        const result = resolveCompact(appended);
+        return {
+          ...prev,
+          cards: result.cards,
+          settings: { ...prev.settings, addTileLayout: result.addTileLayout }
+        };
+      }
+
+      const cards = repairOverlaps(appended);
       return {
         ...prev,
         cards,
-        settings: { ...prev.settings, addTileLayout: nextCardPosition(cards, 3, 3) }
+        settings: {
+          ...prev.settings,
+          addTileLayout: safeAddTilePosition(cards, prev.settings.addTileLayout)
+        }
       };
     });
     setAddOpen(false);
