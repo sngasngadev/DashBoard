@@ -294,3 +294,68 @@ test('dropping add-card tile exactly on a card handle never overlaps', async ({ 
   await page.reload();
   await assertNoOverlap();
 });
+
+
+test('memo-board post-its reorder by drag and always repack without overlap', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  await page.locator('.add-card-tile .add-card-action').click();
+  await page.getByRole('button', { name: /메모보드/ }).click();
+
+  const board = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
+  for (let i = 0; i < 3; i += 1) {
+    await board.getByRole('button', { name: '포스트잇', exact: true }).click();
+  }
+
+  const notes = board.locator('.postit');
+  await expect(notes).toHaveCount(3);
+  await notes.nth(0).locator('textarea').fill('첫째');
+  await notes.nth(1).locator('textarea').fill('둘째');
+  await notes.nth(2).locator('textarea').fill('셋째');
+
+  const assertPacked = async () => {
+    const canvas = await board.locator('.postit-canvas').boundingBox();
+    const boxes = await board.locator('.postit').evaluateAll(elements =>
+      elements.map(element => {
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
+      })
+    );
+    if (!canvas) throw new Error('post-it canvas not visible');
+    expect(Math.abs(boxes[0].x - canvas.x)).toBeLessThan(3);
+    expect(Math.abs(boxes[0].y - canvas.y)).toBeLessThan(3);
+    for (let i = 0; i < boxes.length; i += 1) {
+      for (let j = i + 1; j < boxes.length; j += 1) {
+        const a = boxes[i];
+        const b = boxes[j];
+        const overlap = a.x < b.x + b.w - 1 && a.x + a.w > b.x + 1 && a.y < b.y + b.h - 1 && a.y + a.h > b.y + 1;
+        expect(overlap, `post-its ${i} and ${j} overlap`).toBe(false);
+      }
+    }
+  };
+
+  await assertPacked();
+
+  const thirdHandle = board.locator('.postit').nth(2).getByRole('button', { name: '포스트잇 이동' });
+  const firstNote = board.locator('.postit').nth(0);
+  const handleBox = await thirdHandle.boundingBox();
+  const firstBox = await firstNote.boundingBox();
+  if (!handleBox || !firstBox) throw new Error('post-it drag targets not visible');
+
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(firstBox.x + 12, firstBox.y + 12, { steps: 12 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+
+  await expect(board.locator('.postit textarea').first()).toHaveValue('셋째');
+  await assertPacked();
+
+  await page.waitForTimeout(500);
+  await page.reload();
+
+  const reloaded = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
+  await expect(reloaded.locator('.postit textarea').first()).toHaveValue('셋째');
+});
