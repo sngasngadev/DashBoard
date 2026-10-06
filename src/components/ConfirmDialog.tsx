@@ -5,9 +5,10 @@ interface Props {
   confirmLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  notice?: boolean;
 }
 
-export function ConfirmDialog({ open, title, message, confirmLabel = '삭제', onConfirm, onCancel }: Props) {
+export function ConfirmDialog({ open, title, message, confirmLabel = '삭제', onConfirm, onCancel, notice = false }: Props) {
   if (!open) return null;
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onCancel}>
@@ -15,8 +16,8 @@ export function ConfirmDialog({ open, title, message, confirmLabel = '삭제', o
         <h2 id="confirm-title">{title}</h2>
         <p>{message}</p>
         <div className="modal-actions">
-          <button className="button secondary" onClick={onCancel}>취소</button>
-          <button className="button danger" onClick={onConfirm}>{confirmLabel}</button>
+          {!notice && <button className="button secondary" onClick={onCancel}>취소</button>}
+          <button className={`button ${notice ? 'primary' : 'danger'}`} onClick={onConfirm}>{confirmLabel}</button>
         </div>
       </div>
     </div>
