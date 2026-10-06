@@ -174,3 +174,26 @@ textarea { resize: none; }
 .postit-move-handle:active { cursor:grabbing; }
 .postit-canvas .postit textarea { padding-top:22px; }
 .postit-canvas + .add-postit { width:100%; min-height:48px; margin-top:10px; }
+
+.postit-canvas .postit.drag-target::before,
+.postit-canvas .postit.drag-target::after {
+  content:"";
+  position:absolute;
+  z-index:6;
+  background:#2563eb;
+  border-radius:999px;
+  pointer-events:none;
+  box-shadow:0 0 0 2px rgba(255,255,255,.8);
+}
+.postit-canvas .postit.insert-before::before {
+  left:-6px;
+  top:6px;
+  bottom:6px;
+  width:4px;
+}
+.postit-canvas .postit.insert-after::after {
+  right:-6px;
+  top:6px;
+  bottom:6px;
+  width:4px;
+}
