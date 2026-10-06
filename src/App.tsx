@@ -6,7 +6,7 @@ import 'react-resizable/css/styles.css';
 import './styles.css';
 import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, TodoData, TodoItem } from './types/dashboard';
 import { loadState, saveState, exportBackup, importBackupWeb } from './lib/storage';
-import { compactCards, GRID_COLS, nextCardPosition } from './lib/layout';
+import { compactCards, GRID_COLS, nextCardPosition, reorderAndCompactCards } from './lib/layout';
 import { createCard, createInitialState } from './lib/state';
 import { AddCardModal } from './components/AddCardModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -90,23 +90,43 @@ export default function App() {
     return [...base, { i: ADD_ID, ...state.settings.addTileLayout, minW: 3, minH: 3, maxW: 3, maxH: 3 }];
   }, [state.cards, state.settings.addTileLayout]);
 
-  const applyLayout = (layout: Layout[], compactAfter: boolean, movedId?: string) => {
+  const applyDragStop = (layout: Layout[], movedId: string, target: Layout) => {
     setState(prev => {
-      let cards = prev.cards.map(card => {
-        const next = layout.find(item => item.i === card.id);
-        return next ? { ...card, layout: { x: next.x, y: next.y, w: next.w, h: next.h } } : card;
-      });
       const add = layout.find(item => item.i === ADD_ID);
       let addTileLayout = add
         ? { x: add.x, y: add.y, w: 3, h: 3 }
         : prev.settings.addTileLayout;
 
-      if (compactAfter && prev.settings.autoCompact && movedId !== ADD_ID) {
-        cards = compactCards(cards);
-        addTileLayout = nextCardPosition(cards, 3, 3);
+      if (movedId === ADD_ID) {
+        return { ...prev, settings: { ...prev.settings, addTileLayout } };
       }
 
+      if (prev.settings.autoCompact) {
+        const cards = reorderAndCompactCards(prev.cards, movedId, target);
+        addTileLayout = nextCardPosition(cards, 3, 3);
+        return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
+      }
+
+      const cards = prev.cards.map(card => {
+        const next = layout.find(item => item.i === card.id);
+        return next ? { ...card, layout: { x: next.x, y: next.y, w: next.w, h: next.h } } : card;
+      });
       return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
+    });
+  };
+
+  const applyResizeStop = (layout: Layout[]) => {
+    setState(prev => {
+      let cards = prev.cards.map(card => {
+        const next = layout.find(item => item.i === card.id);
+        return next ? { ...card, layout: { x: next.x, y: next.y, w: next.w, h: next.h } } : card;
+      });
+      if (prev.settings.autoCompact) cards = compactCards(cards);
+      return {
+        ...prev,
+        cards,
+        settings: { ...prev.settings, addTileLayout: prev.settings.autoCompact ? nextCardPosition(cards, 3, 3) : prev.settings.addTileLayout }
+      };
     });
   };
 
@@ -171,8 +191,8 @@ export default function App() {
       {selected === 'main' ? (
         mobile ? <div className="mobile-card-stack">{state.cards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button></div>
         : <GridLayout className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableHandle=".drag-handle" draggableCancel="textarea, input, button:not(.drag-handle), select, [contenteditable='true']" preventCollision={false} allowOverlap={false} compactType={null}
-            onDragStop={(layout, _oldItem, newItem) => applyLayout(layout, true, newItem.i)}
-            onResizeStop={(layout, _oldItem, newItem) => applyLayout(layout, true, newItem.i)}>
+            onDragStop={(layout, _oldItem, newItem) => applyDragStop(layout, newItem.i, newItem)}
+            onResizeStop={(layout) => applyResizeStop(layout)}>
             {state.cards.map(card => <div key={card.id}>{shell(card)}</div>)}
             <div key={ADD_ID} className="add-card-tile">
               <button className="add-card-drag-handle drag-handle" type="button" aria-label="카드 추가 타일 이동" title="잡고 이동"><GripVertical size={17}/></button>
