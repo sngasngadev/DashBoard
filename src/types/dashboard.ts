@@ -57,15 +57,3 @@ export interface DashboardState {
   };
   cards: CardRecord[];
 }
-
-declare global {
-  interface Window {
-    dashboardStore?: {
-      load: () => Promise<unknown>;
-      save: (value: DashboardState) => Promise<boolean>;
-      exportBackup: (value: DashboardState) => Promise<boolean>;
-      importBackup: () => Promise<unknown>;
-      getDataLocation: () => Promise<string>;
-    };
-  }
-}
