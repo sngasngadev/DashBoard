@@ -18,6 +18,12 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: DashBoard-Usability-Screenshots
+          path: test-results/usability
+          if-no-files-found: ignore
       - run: cp dist/index.html DashBoard.html
       - uses: actions/upload-artifact@v4
         with:
