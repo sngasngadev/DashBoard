@@ -181,3 +181,62 @@ test('auto compact off keeps other cards fixed during collisions', async ({ page
   expect(Math.abs(todoAfter.x - todoBefore.x)).toBeLessThan(2);
   expect(Math.abs(todoAfter.y - todoBefore.y)).toBeLessThan(2);
 });
+
+
+test('final layout never overlaps, including the add-card tile', async ({ page }) => {
+  const assertNoOverlap = async () => {
+    const boxes = await page.locator('.react-grid-layout > div').evaluateAll(elements =>
+      elements.map(element => {
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
+      })
+    );
+    for (let i = 0; i < boxes.length; i += 1) {
+      for (let j = i + 1; j < boxes.length; j += 1) {
+        const a = boxes[i];
+        const b = boxes[j];
+        const overlaps = a.x < b.x + b.w - 1 && a.x + a.w > b.x + 1 && a.y < b.y + b.h - 1 && a.y + a.h > b.y + 1;
+        expect(overlaps, `items ${i} and ${j} overlap`).toBe(false);
+      }
+    }
+  };
+
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  await page.locator('.add-card-tile .add-card-action').click();
+  await page.getByRole('button', { name: /메모보드/ }).click();
+  await assertNoOverlap();
+
+  const todoCard = page.locator('.dashboard-card:has(.todo-card-content)').first();
+  const todoBox = await todoCard.boundingBox();
+  const addHandle = page.getByRole('button', { name: '카드 추가 타일 이동' });
+  const addHandleBox = await addHandle.boundingBox();
+  if (!todoBox || !addHandleBox) throw new Error('add tile drag targets are not visible');
+
+  await page.mouse.move(addHandleBox.x + addHandleBox.width / 2, addHandleBox.y + addHandleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(todoBox.x + todoBox.width / 2, todoBox.y + todoBox.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  await assertNoOverlap();
+
+  const boardCard = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
+  const boardHandle = boardCard.getByRole('button', { name: '카드 이동' });
+  const memoCard = page.locator('.dashboard-card:has(input.card-title[value="자유메모"])');
+  const boardHandleBox = await boardHandle.boundingBox();
+  const memoBox = await memoCard.boundingBox();
+  if (!boardHandleBox || !memoBox) throw new Error('card drag targets are not visible');
+
+  await page.mouse.move(boardHandleBox.x + boardHandleBox.width / 2, boardHandleBox.y + boardHandleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(memoBox.x + memoBox.width / 2, memoBox.y + memoBox.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  await assertNoOverlap();
+
+  await page.waitForTimeout(500);
+  await page.reload();
+  await assertNoOverlap();
+});
