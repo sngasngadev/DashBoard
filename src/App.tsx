@@ -5,7 +5,7 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './styles.css';
 import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, TodoData, TodoItem } from './types/dashboard';
-import { loadState, saveState, exportBackup, importBackupWeb } from './lib/storage';
+import { loadState, saveState, exportBackup, importBackup } from './lib/storage';
 import { GRID_COLS, repairOverlaps, resolveAddTileDrop, resolveCardDrop, resolveCardResize, resolveCompact, safeAddTilePosition } from './lib/layout';
 import { createCard, createInitialState } from './lib/state';
 import { AddCardModal } from './components/AddCardModal';
@@ -203,7 +203,7 @@ export default function App() {
     input.type = 'file'; input.accept = '.json,application/json';
     input.onchange = async () => {
       if (!input.files?.[0]) return;
-      const imported = await importBackupWeb(input.files[0]);
+      const imported = await importBackup(input.files[0]);
       setConfirm({
         title: '백업을 불러올까요?',
         message: '현재 대시보드 내용과 배치가 백업 파일의 내용으로 바뀝니다.',
