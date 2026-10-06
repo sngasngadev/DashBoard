@@ -48,7 +48,7 @@ async function idbSet(value: DashboardState): Promise<void> {
   }
 }
 
-function loadLegacyState(): DashboardState | null {
+function loadFallbackState(): DashboardState | null {
   try {
     const raw = localStorage.getItem(FALLBACK_KEY);
     return raw ? normalizeState(JSON.parse(raw)) : null;
@@ -58,19 +58,22 @@ function loadLegacyState(): DashboardState | null {
 }
 
 export async function loadState(): Promise<DashboardState> {
+  const fallback = loadFallbackState();
+  if (fallback) {
+    try {
+      await idbSet(fallback);
+      localStorage.removeItem(FALLBACK_KEY);
+    } catch {
+      // Keep the fallback until IndexedDB becomes writable again.
+    }
+    return fallback;
+  }
+
   try {
     const stored = await idbGet();
     if (stored) return normalizeState(stored);
-
-    const legacy = loadLegacyState();
-    if (legacy) {
-      await idbSet(legacy);
-      localStorage.removeItem(FALLBACK_KEY);
-      return legacy;
-    }
   } catch {
-    const legacy = loadLegacyState();
-    if (legacy) return legacy;
+    // Fall through to a clean initial state when no fallback exists.
   }
 
   return normalizeState(null);
@@ -79,6 +82,11 @@ export async function loadState(): Promise<DashboardState> {
 export async function saveState(state: DashboardState) {
   try {
     await idbSet(state);
+    try {
+      localStorage.removeItem(FALLBACK_KEY);
+    } catch {
+      // A stale fallback is harmless when localStorage itself is unavailable.
+    }
     return true;
   } catch {
     localStorage.setItem(FALLBACK_KEY, JSON.stringify(state));
