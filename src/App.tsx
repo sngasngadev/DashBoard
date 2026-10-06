@@ -40,6 +40,7 @@ export default function App() {
   const [addOpen, setAddOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+  const [layoutRevision, setLayoutRevision] = useState(0);
   const gridRef = useRef<HTMLDivElement>(null);
   const width = useContainerWidth(gridRef, loaded);
   const mobile = width !== null && width < 760;
@@ -115,6 +116,10 @@ export default function App() {
       addTileLayout = safeAddTilePosition(cards, addTileLayout);
       return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
     });
+    // react-grid-layout keeps its own transient drag layout. Even when the
+    // persisted safe layout is identical to the previous state, remount the
+    // grid so the visual position is forced back to the collision-free state.
+    setLayoutRevision(value => value + 1);
   };
 
   const applyResizeStop = (layout: Layout[]) => {
@@ -131,6 +136,7 @@ export default function App() {
         settings: { ...prev.settings, addTileLayout: safeAddTilePosition(cards, preferredAdd) }
       };
     });
+    setLayoutRevision(value => value + 1);
   };
 
   const askTodoDelete = (card: CardRecord, item: TodoItem) => setConfirm({ title: '할 일을 삭제할까요?', message: item.text.split('\n')[0] || '이 항목을 삭제합니다.', action: () => {
@@ -195,7 +201,7 @@ export default function App() {
     <main className="workspace" ref={gridRef}>
       {width === null ? null : selected === 'main' ? (
         mobile ? <div className="mobile-card-stack">{state.cards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button></div>
-        : <GridLayout className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableHandle=".drag-handle" draggableCancel="textarea, input, button:not(.drag-handle), select, [contenteditable='true']" preventCollision={false} allowOverlap compactType={null}
+        : <GridLayout key={layoutRevision} className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableHandle=".drag-handle" draggableCancel="textarea, input, button:not(.drag-handle), select, [contenteditable='true']" preventCollision={false} allowOverlap compactType={null}
             onDragStop={(layout, _oldItem, newItem) => applyDragStop(layout, newItem.i, newItem)}
             onResizeStop={(layout) => applyResizeStop(layout)}>
             {state.cards.map(card => <div key={card.id}>{shell(card)}</div>)}
