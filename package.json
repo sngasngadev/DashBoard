@@ -8,7 +8,7 @@
     "dev": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "dev:web": "vite",
     "build": "tsc -b && vite build",
-    "test": "vitest run",
+    "test": "vitest run src",
     "test:watch": "vitest",
     "preview": "vite preview --host 127.0.0.1",
     "dist:win": "npm run build && electron-builder --win portable",
