@@ -1,0 +1,31 @@
+name: Bootstrap source
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    if: ${{ hashFiles('bootstrap.part1') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct source archive
+        shell: bash
+        run: |
+          cat bootstrap.part1 bootstrap.part2 bootstrap.part3 bootstrap.part4 | base64 -d > /tmp/dashboard-src.tgz
+          tar -xzf /tmp/dashboard-src.tgz -C .
+          rm -f bootstrap.part1 bootstrap.part2 bootstrap.part3 bootstrap.part4
+          rm -f .github/workflows/bootstrap.yml
+      - name: Commit source
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add initial DashBoard implementation"
+          git push
