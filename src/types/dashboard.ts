@@ -29,6 +29,8 @@ export interface BoardNote {
   id: string;
   text: string;
   color: NoteColor;
+  width?: number;
+  height?: number;
 }
 
 export interface MemoBoardData {
