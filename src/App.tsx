@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GridLayout, { type Layout } from 'react-grid-layout';
-import { Plus, Settings } from 'lucide-react';
+import { GripVertical, Plus, Settings } from 'lucide-react';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './styles.css';
@@ -76,25 +76,37 @@ export default function App() {
     setState(prev => {
       let cards = [...prev.cards, createCard(type, prev.cards)];
       if (prev.settings.autoCompact) cards = compactCards(cards);
-      return { ...prev, cards };
+      return {
+        ...prev,
+        cards,
+        settings: { ...prev.settings, addTileLayout: nextCardPosition(cards, 3, 3) }
+      };
     });
     setAddOpen(false);
   };
 
   const layouts: Layout[] = useMemo(() => {
     const base = state.cards.map(card => ({ i: card.id, ...card.layout, minW: 3, minH: 4 }));
-    const addPos = nextCardPosition(state.cards, 3, 3);
-    return [...base, { i: ADD_ID, ...addPos, static: true }];
-  }, [state.cards]);
+    return [...base, { i: ADD_ID, ...state.settings.addTileLayout, minW: 3, minH: 3, maxW: 3, maxH: 3 }];
+  }, [state.cards, state.settings.addTileLayout]);
 
-  const applyLayout = (layout: Layout[], compactAfter: boolean) => {
+  const applyLayout = (layout: Layout[], compactAfter: boolean, movedId?: string) => {
     setState(prev => {
       let cards = prev.cards.map(card => {
         const next = layout.find(item => item.i === card.id);
         return next ? { ...card, layout: { x: next.x, y: next.y, w: next.w, h: next.h } } : card;
       });
-      if (compactAfter && prev.settings.autoCompact) cards = compactCards(cards);
-      return { ...prev, cards };
+      const add = layout.find(item => item.i === ADD_ID);
+      let addTileLayout = add
+        ? { x: add.x, y: add.y, w: 3, h: 3 }
+        : prev.settings.addTileLayout;
+
+      if (compactAfter && prev.settings.autoCompact && movedId !== ADD_ID) {
+        cards = compactCards(cards);
+        addTileLayout = nextCardPosition(cards, 3, 3);
+      }
+
+      return { ...prev, cards, settings: { ...prev.settings, addTileLayout } };
     });
   };
 
@@ -158,18 +170,29 @@ export default function App() {
     <main className="workspace" ref={gridRef}>
       {selected === 'main' ? (
         mobile ? <div className="mobile-card-stack">{state.cards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button></div>
-        : <GridLayout className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableCancel=".drag-cancel, textarea, input, button, select, [contenteditable='true']" preventCollision allowOverlap={false} compactType={null}
-            onLayoutChange={layout => applyLayout(layout, false)} onDragStop={layout => applyLayout(layout, true)} onResizeStop={layout => applyLayout(layout, true)}>
+        : <GridLayout className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableHandle=".drag-handle" draggableCancel="textarea, input, button:not(.drag-handle), select, [contenteditable='true']" preventCollision allowOverlap={false} compactType={null}
+            onLayoutChange={layout => applyLayout(layout, false)}
+            onDragStop={(layout, _oldItem, newItem) => applyLayout(layout, true, newItem.i)}
+            onResizeStop={(layout, _oldItem, newItem) => applyLayout(layout, true, newItem.i)}>
             {state.cards.map(card => <div key={card.id}>{shell(card)}</div>)}
-            <button key={ADD_ID} className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button>
+            <div key={ADD_ID} className="add-card-tile">
+              <button className="add-card-drag-handle drag-handle" type="button" aria-label="카드 추가 타일 이동" title="잡고 이동"><GripVertical size={17}/></button>
+              <button className="add-card-action" type="button" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button>
+            </div>
           </GridLayout>
       ) : selectedCard ? <div className="detail-wrapper">{shell(selectedCard, true)}</div> : null}
     </main>
 
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
     <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
-      onToggleAuto={autoCompact => setState(prev => ({ ...prev, settings: { ...prev.settings, autoCompact }, cards: autoCompact ? compactCards(prev.cards) : prev.cards }))}
-      onCompact={() => setState(prev => ({ ...prev, cards: compactCards(prev.cards) }))}
+      onToggleAuto={autoCompact => setState(prev => {
+        const cards = autoCompact ? compactCards(prev.cards) : prev.cards;
+        return { ...prev, settings: { ...prev.settings, autoCompact, addTileLayout: autoCompact ? nextCardPosition(cards, 3, 3) : prev.settings.addTileLayout }, cards };
+      })}
+      onCompact={() => setState(prev => {
+        const cards = compactCards(prev.cards);
+        return { ...prev, cards, settings: { ...prev.settings, addTileLayout: nextCardPosition(cards, 3, 3) } };
+      })}
       onExport={() => exportBackup(state)} onImport={doImport} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
   </div>;
