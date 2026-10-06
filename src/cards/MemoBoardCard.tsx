@@ -14,7 +14,7 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
   const [openPalette, setOpenPalette] = useState<string | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(0);
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragTarget, setDragTarget] = useState<string | null>(null);
+  const [dragTarget, setDragTarget] = useState<{ id: string; after: boolean } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragTargetRef = useRef<{ id: string; after: boolean } | null>(null);
 
@@ -54,7 +54,7 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
         return <div
           key={note.id}
           data-note-id={note.id}
-          className={`postit ${note.color} ${draggingId === note.id ? 'dragging' : ''} ${dragTarget === note.id ? 'drag-target' : ''}`}
+          className={`postit ${note.color} ${draggingId === note.id ? 'dragging' : ''} ${dragTarget?.id === note.id ? `drag-target ${dragTarget.after ? 'insert-after' : 'insert-before'}` : ''}`}
           style={{ width: layout.width, height: layout.height, left: layout.x, top: layout.y }}
         >
           <button
@@ -84,7 +84,7 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
                   (Math.abs(event.clientY - (rect.top + rect.height / 2)) < rect.height * 0.3 &&
                    event.clientX > rect.left + rect.width / 2);
                 dragTargetRef.current = { id: targetId, after };
-                setDragTarget(targetId);
+                setDragTarget({ id: targetId, after });
               };
 
               const stop = () => {
