@@ -2,65 +2,9 @@ import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BoardNote, MemoBoardData, NoteColor } from '../types/dashboard';
 import { makeId } from '../lib/id';
+import { packNotes, reorderNotes } from '../lib/postitLayout';
 
 const colors: NoteColor[] = ['yellow', 'pink', 'blue', 'green', 'lavender'];
-const GAP = 10;
-
-type Packed = { id: string; x: number; y: number; width: number; height: number };
-
-function rectsOverlap(a: Omit<Packed, 'id'>, b: Omit<Packed, 'id'>) {
-  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
-}
-
-function packNotes(notes: BoardNote[], canvasWidth: number): Packed[] {
-  if (canvasWidth <= 0) return [];
-  const placed: Packed[] = [];
-
-  for (const note of notes) {
-    const width = Math.min(note.width ?? 240, Math.max(180, canvasWidth));
-    const height = note.height ?? 190;
-
-    const xs = new Set<number>([0]);
-    const ys = new Set<number>([0]);
-    for (const item of placed) {
-      xs.add(item.x + item.width + GAP);
-      ys.add(item.y + item.height + GAP);
-    }
-
-    const candidates = [...ys]
-      .flatMap(y => [...xs].map(x => ({ x, y })))
-      .filter(pos => pos.x + width <= canvasWidth + 0.5)
-      .sort((a, b) => a.y - b.y || a.x - b.x);
-
-    let chosen = candidates.find(pos =>
-      !placed.some(item => rectsOverlap(
-        { x: pos.x, y: pos.y, width, height },
-        { x: item.x, y: item.y, width: item.width, height: item.height }
-      ))
-    );
-
-    if (!chosen) {
-      const bottom = placed.length ? Math.max(...placed.map(item => item.y + item.height)) + GAP : 0;
-      chosen = { x: 0, y: bottom };
-    }
-
-    placed.push({ id: note.id, x: chosen.x, y: chosen.y, width, height });
-  }
-
-  return placed;
-}
-
-function reorderNotes(notes: BoardNote[], movedId: string, targetId: string, after: boolean) {
-  if (movedId === targetId) return notes;
-  const moved = notes.find(note => note.id === movedId);
-  if (!moved) return notes;
-  const rest = notes.filter(note => note.id !== movedId);
-  const targetIndex = rest.findIndex(note => note.id === targetId);
-  if (targetIndex < 0) return notes;
-  const insertAt = targetIndex + (after ? 1 : 0);
-  return [...rest.slice(0, insertAt), moved, ...rest.slice(insertAt)];
-}
-
 export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
   data: MemoBoardData;
   onChange: (data: MemoBoardData) => void;
