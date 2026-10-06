@@ -98,5 +98,16 @@ export async function exportBackup(state: DashboardState) {
 }
 
 export async function importBackup(file: File) {
-  return normalizeState(JSON.parse(await file.text()));
+  const parsed: unknown = JSON.parse(await file.text());
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('올바른 대시보드 백업 파일이 아닙니다.');
+  }
+
+  const root = parsed as Record<string, unknown>;
+  if (root.version !== 1 || !Array.isArray(root.cards)) {
+    throw new Error('지원하지 않는 백업 형식입니다.');
+  }
+
+  return normalizeState(parsed);
 }
