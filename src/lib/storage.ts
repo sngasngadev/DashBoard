@@ -5,7 +5,7 @@ const DB_NAME = 'dashboard-db';
 const DB_VERSION = 1;
 const STORE_NAME = 'state';
 const STATE_KEY = 'dashboard-state';
-const LEGACY_KEY = 'dashboard-state-v1';
+const FALLBACK_KEY = 'dashboard-state-v1';
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -50,7 +50,7 @@ async function idbSet(value: DashboardState): Promise<void> {
 
 function loadLegacyState(): DashboardState | null {
   try {
-    const raw = localStorage.getItem(LEGACY_KEY);
+    const raw = localStorage.getItem(FALLBACK_KEY);
     return raw ? normalizeState(JSON.parse(raw)) : null;
   } catch {
     return null;
@@ -65,7 +65,7 @@ export async function loadState(): Promise<DashboardState> {
     const legacy = loadLegacyState();
     if (legacy) {
       await idbSet(legacy);
-      localStorage.removeItem(LEGACY_KEY);
+      localStorage.removeItem(FALLBACK_KEY);
       return legacy;
     }
   } catch {
@@ -81,7 +81,7 @@ export async function saveState(state: DashboardState) {
     await idbSet(state);
     return true;
   } catch {
-    localStorage.setItem(LEGACY_KEY, JSON.stringify(state));
+    localStorage.setItem(FALLBACK_KEY, JSON.stringify(state));
     return true;
   }
 }
@@ -97,6 +97,6 @@ export async function exportBackup(state: DashboardState) {
   return true;
 }
 
-export async function importBackupWeb(file: File) {
+export async function importBackup(file: File) {
   return normalizeState(JSON.parse(await file.text()));
 }
