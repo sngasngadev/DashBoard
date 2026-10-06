@@ -349,10 +349,21 @@ test('memo-board post-its reorder by drag and always repack without overlap', as
   await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(firstBox.x + 12, firstBox.y + 12, { steps: 12 });
+  await page.waitForTimeout(120);
+
+  const preview = board.locator('.postit-drop-preview');
+  await expect(preview).toBeVisible();
+  const previewBox = await preview.boundingBox();
+  if (!previewBox) throw new Error('post-it drop preview is not visible');
+
   await page.mouse.up();
   await page.waitForTimeout(300);
 
   await expect(board.locator('.postit textarea').first()).toHaveValue('셋째');
+  const movedBox = await board.locator('.postit').first().boundingBox();
+  if (!movedBox) throw new Error('moved post-it is not visible');
+  expect(Math.abs(movedBox.x - previewBox.x)).toBeLessThan(3);
+  expect(Math.abs(movedBox.y - previewBox.y)).toBeLessThan(3);
   await assertPacked();
 
   await page.waitForTimeout(500);
