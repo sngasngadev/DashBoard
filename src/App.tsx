@@ -20,14 +20,15 @@ const ADD_ID = '__add_card__';
 
 type ConfirmState = null | { title: string; message: string; action: () => void; confirmLabel?: string };
 
-function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>) {
+function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean) {
   const [width, setWidth] = useState(1200);
   useEffect(() => {
-    if (!ref.current) return;
+    if (!enabled || !ref.current) return;
+    setWidth(ref.current.getBoundingClientRect().width);
     const observer = new ResizeObserver(entries => setWidth(entries[0].contentRect.width));
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [ref]);
+  }, [ref, enabled]);
   return width;
 }
 
@@ -40,7 +41,7 @@ export default function App() {
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   const gridRef = useRef<HTMLDivElement>(null);
-  const width = useContainerWidth(gridRef);
+  const width = useContainerWidth(gridRef, loaded);
   const mobile = width < 760;
 
   useEffect(() => {
