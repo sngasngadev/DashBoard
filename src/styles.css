@@ -123,11 +123,11 @@ textarea { resize: none; }
 
 .detail-mode .postit { position:relative; flex:0 0 auto; min-width:180px; max-width:600px; min-height:140px; max-height:500px; }
 
-.postit-footer { justify-content:flex-end; }
+.postit-footer { display:flex; align-items:center; justify-content:flex-end; min-height:34px; }
 .postit-actions { display:flex; align-items:center; gap:2px; position:relative; }
 .color-picker { position:relative; display:flex; align-items:center; }
 .color-picker .current { width:16px; height:16px; margin:0 5px; }
-.color-palette { position:absolute; right:22px; bottom:-2px; display:flex; gap:4px; padding:5px 6px; background:rgba(255,255,255,.94); border:1px solid rgba(0,0,0,.08); border-radius:999px; box-shadow:0 4px 12px rgba(15,23,42,.12); z-index:3; }
+.color-palette { position:absolute; right:22px; bottom:0; display:flex; gap:4px; padding:5px 6px; background:rgba(255,255,255,.94); border:1px solid rgba(0,0,0,.08); border-radius:999px; box-shadow:0 4px 12px rgba(15,23,42,.12); z-index:3; }
 
 .postit, .detail-mode .postit {
   position:relative;
