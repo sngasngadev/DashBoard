@@ -2,58 +2,43 @@ import { Bold, Italic, Underline } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { MemoData } from '../types/dashboard';
 
-function htmlToText(html: string) {
-  const root = document.createElement('div');
-  root.innerHTML = html;
-
-  const read = (node: Node): string => {
-    if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? '';
-    if (!(node instanceof HTMLElement)) return '';
-
-    if (node.tagName === 'BR') return '\n';
-
-    const block = node.tagName === 'DIV' || node.tagName === 'P';
-    const content = Array.from(node.childNodes).map(read).join('');
-    if (!block) return content;
-    return content.endsWith('\n') ? content : content + '\n';
-  };
-
-  return Array.from(root.childNodes).map(read).join('').replace(/\n$/, '');
-}
-
-function escapeHtml(text: string) {
-  return text
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
-}
-
-function textToHtml(text: string) {
-  return text
-    .split('\n')
-    .map(line => `<div>${line ? escapeHtml(line) : '<br>'}</div>`)
-    .join('');
-}
-
 function command(name: string, value?: string) {
   document.execCommand(name, false, value);
 }
 
-export function MemoCard({ data, onChange, detail = false }: { data: MemoData; onChange: (data: MemoData) => void; detail?: boolean }) {
+function EditableMemo({ html, className, placeholder, onChange }: {
+  html: string;
+  className: string;
+  placeholder: string;
+  onChange: (html: string) => void;
+}) {
   const editor = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (detail && editor.current && editor.current.innerHTML !== data.html) {
-      editor.current.innerHTML = data.html;
+    if (editor.current && editor.current.innerHTML !== html) {
+      editor.current.innerHTML = html;
     }
-  }, [data.html, detail]);
+  }, [html]);
+
+  return <div
+    ref={editor}
+    className={className}
+    contentEditable
+    suppressContentEditableWarning
+    data-placeholder={placeholder}
+    onInput={e => onChange(e.currentTarget.innerHTML)}
+  />;
+}
+
+export function MemoCard({ data, onChange, detail = false }: { data: MemoData; onChange: (data: MemoData) => void; detail?: boolean }) {
+  const changeHtml = (html: string) => onChange({ html });
 
   if (!detail) {
-    return <textarea
+    return <EditableMemo
+      html={data.html}
       className="simple-memo"
       placeholder="메모를 입력하세요."
-      value={htmlToText(data.html)}
-      onChange={e => onChange({ html: textToHtml(e.target.value) })}
+      onChange={changeHtml}
     />;
   }
 
@@ -70,13 +55,11 @@ export function MemoCard({ data, onChange, detail = false }: { data: MemoData; o
       </select>
       <label className="color-control" title="글자 색"><span>글자색</span><input type="color" onChange={e => command('foreColor', e.target.value)} /></label>
     </div>
-    <div
-      ref={editor}
+    <EditableMemo
+      html={data.html}
       className="rich-editor"
-      contentEditable
-      suppressContentEditableWarning
-      data-placeholder="메모를 입력하세요."
-      onInput={e => onChange({ html: e.currentTarget.innerHTML })}
+      placeholder="메모를 입력하세요."
+      onChange={changeHtml}
     />
   </div>;
 }
