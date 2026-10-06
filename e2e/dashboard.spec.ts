@@ -272,7 +272,11 @@ test('dropping add-card tile exactly on a card handle never overlaps', async ({ 
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 
-  const targetHandle = page.locator('.dashboard-card').first().getByRole('button', { name: '카드 이동' });
+  // Reproduce the real-world layout with three normal cards plus the add tile.
+  await page.locator('.add-card-tile .add-card-action').click();
+  await page.getByRole('button', { name: /메모보드/ }).click();
+
+  const targetHandle = page.locator('.dashboard-card:has(input.card-title[value="자유메모"])').getByRole('button', { name: '카드 이동' });
   const targetHandleBox = await targetHandle.boundingBox();
   const addHandle = page.getByRole('button', { name: '카드 추가 타일 이동' });
   const addHandleBox = await addHandle.boundingBox();
