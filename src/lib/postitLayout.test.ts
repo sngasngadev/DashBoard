@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { BoardNote } from '../types/dashboard';
 import { packNotes, reorderNotes } from './postitLayout';
+import { POSTIT_DEFAULT_HEIGHT, POSTIT_DEFAULT_WIDTH, POSTIT_MIN_HEIGHT, POSTIT_MIN_WIDTH } from './postit';
 
-const note = (id: string, width = 240, height = 190): BoardNote => ({
+const note = (id: string, width = POSTIT_DEFAULT_WIDTH, height = POSTIT_DEFAULT_HEIGHT): BoardNote => ({
   id,
   text: id,
   color: 'yellow',
@@ -32,8 +33,8 @@ describe('post-it layout', () => {
   it('uses free space created by differently sized notes', () => {
     const packed = packNotes([
       note('a', 300, 300),
-      note('b', 180, 140),
-      note('c', 180, 140)
+      note('b', POSTIT_MIN_WIDTH, POSTIT_MIN_HEIGHT),
+      note('c', POSTIT_MIN_WIDTH, POSTIT_MIN_HEIGHT)
     ], 700);
 
     expect(packed[0]).toMatchObject({ x: 0, y: 0 });
