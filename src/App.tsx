@@ -6,7 +6,7 @@ import 'react-resizable/css/styles.css';
 import './styles.css';
 import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, ScheduleData, ScheduleItem, TodoData, TodoItem } from './types/dashboard';
 import { loadState, saveState, exportBackup, importBackup } from './lib/storage';
-import { GRID_COLS, repairOverlaps, resolveAddTileDrop, resolveCardDrop, resolveCardResize, resolveCompact, safeAddTilePosition } from './lib/layout';
+import { ADD_TILE_HEIGHT, ADD_TILE_WIDTH, GRID_COLS, repairOverlaps, resolveAddTileDrop, resolveCardDrop, resolveCardResize, resolveCompact, safeAddTilePosition } from './lib/layout';
 import { createCard, createInitialState } from './lib/state';
 import { AddCardModal } from './components/AddCardModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -123,14 +123,21 @@ export default function App() {
 
   const layouts: Layout[] = useMemo(() => {
     const base = state.cards.map(card => ({ i: card.id, ...card.layout, minW: 3, minH: 4 }));
-    return [...base, { i: ADD_ID, ...state.settings.addTileLayout, minW: 3, minH: 3, maxW: 3, maxH: 3 }];
+    return [...base, {
+      i: ADD_ID,
+      ...state.settings.addTileLayout,
+      minW: ADD_TILE_WIDTH,
+      minH: ADD_TILE_HEIGHT,
+      maxW: ADD_TILE_WIDTH,
+      maxH: ADD_TILE_HEIGHT
+    }];
   }, [state.cards, state.settings.addTileLayout]);
 
   const applyDragStop = (layout: Layout[], movedId: string, target: Layout) => {
     setState(prev => {
       const addLayout = layout.find(item => item.i === ADD_ID);
       const droppedAdd = addLayout
-        ? { x: addLayout.x, y: addLayout.y, w: 3, h: 3 }
+        ? { x: addLayout.x, y: addLayout.y, w: ADD_TILE_WIDTH, h: ADD_TILE_HEIGHT }
         : prev.settings.addTileLayout;
 
       const result = movedId === ADD_ID
