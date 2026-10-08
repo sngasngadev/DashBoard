@@ -1,6 +1,8 @@
 import type { CardLayout, CardRecord } from '../types/dashboard';
 
 export const GRID_COLS = 12;
+export const ADD_TILE_WIDTH = 3;
+export const ADD_TILE_HEIGHT = 3;
 
 export function overlaps(a: CardLayout, b: CardLayout) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -56,7 +58,7 @@ export function repairOverlaps(cards: CardRecord[], cols = GRID_COLS): CardRecor
 }
 
 export function safeAddTilePosition(cards: CardRecord[], preferred: CardLayout, cols = GRID_COLS): CardLayout {
-  return nearestFreePosition(cards.map(card => card.layout), { ...preferred, w: 3, h: 3 }, cols);
+  return nearestFreePosition(cards.map(card => card.layout), { ...preferred, w: ADD_TILE_WIDTH, h: ADD_TILE_HEIGHT }, cols);
 }
 
 export function packCardsInOrder(cards: CardRecord[], orderedIds: string[], cols = GRID_COLS): CardRecord[] {
@@ -201,7 +203,7 @@ export function resolveCardDrop(
       }, cols);
 
   const preferredAdd = autoCompact
-    ? nextCardPosition(nextCards, 3, 3)
+    ? nextCardPosition(nextCards, ADD_TILE_WIDTH, ADD_TILE_HEIGHT)
     : addTileLayout;
 
   return {
@@ -225,7 +227,7 @@ export function resolveCardResize(
   if (autoCompact) nextCards = compactCards(nextCards, cols);
 
   const preferredAdd = autoCompact
-    ? nextCardPosition(nextCards, 3, 3)
+    ? nextCardPosition(nextCards, ADD_TILE_WIDTH, ADD_TILE_HEIGHT)
     : addTileLayout;
 
   return {
@@ -238,6 +240,6 @@ export function resolveCompact(cards: CardRecord[], cols = GRID_COLS): Dashboard
   const nextCards = compactCards(cards, cols);
   return {
     cards: nextCards,
-    addTileLayout: safeAddTilePosition(nextCards, nextCardPosition(nextCards, 3, 3), cols)
+    addTileLayout: safeAddTilePosition(nextCards, nextCardPosition(nextCards, ADD_TILE_WIDTH, ADD_TILE_HEIGHT), cols)
   };
 }
