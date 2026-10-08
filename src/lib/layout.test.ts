@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compactCards, firstFreePosition, overlaps, repairOverlaps, reorderAndCompactCards, safeAddTilePosition } from './layout';
+import { ADD_TILE_HEIGHT, ADD_TILE_WIDTH, compactCards, firstFreePosition, overlaps, repairOverlaps, reorderAndCompactCards, safeAddTilePosition } from './layout';
 import type { CardRecord } from '../types/dashboard';
 
 const card = (id: string, x: number, y: number, w = 4, h = 4): CardRecord => ({
@@ -58,8 +58,8 @@ describe('layout packing', () => {
 
   it('moves the add tile to a nearby free position when its preferred spot overlaps a card', () => {
     const cards = [card('a', 0, 0, 4, 4), card('b', 4, 0, 4, 4)];
-    const add = safeAddTilePosition(cards, { x: 0, y: 0, w: 3, h: 3 });
+    const add = safeAddTilePosition(cards, { x: 0, y: 0, w: ADD_TILE_WIDTH, h: ADD_TILE_HEIGHT });
     expect(cards.some(item => overlaps(item.layout, add))).toBe(false);
-    expect(add).toEqual({ x: 0, y: 4, w: 3, h: 3 });
+    expect(add).toEqual({ x: 0, y: 4, w: ADD_TILE_WIDTH, h: ADD_TILE_HEIGHT });
   });
 });
