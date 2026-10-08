@@ -1,4 +1,4 @@
-export type CardType = 'todo' | 'memo' | 'memoBoard';
+export type CardType = 'todo' | 'schedule' | 'memo' | 'memoBoard';
 
 export interface CardLayout {
   x: number;
@@ -18,6 +18,21 @@ export interface TodoData {
   items: TodoItem[];
   completedCollapsed: boolean;
   draft: string;
+}
+
+export interface ScheduleItem {
+  id: string;
+  date: string;
+  text: string;
+  done: boolean;
+  createdAt: string;
+}
+
+export interface ScheduleData {
+  items: ScheduleItem[];
+  completedCollapsed: boolean;
+  draftDate: string;
+  draftText: string;
 }
 
 export interface MemoData {
@@ -44,7 +59,7 @@ export interface CardRecord {
   title: string;
   favorite: boolean;
   layout: CardLayout;
-  data: TodoData | MemoData | MemoBoardData | Record<string, unknown>;
+  data: TodoData | ScheduleData | MemoData | MemoBoardData | Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
