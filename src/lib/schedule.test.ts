@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { daysUntil, scheduleUrgency, sortScheduleItems } from './schedule';
+import { daysUntil, isDateValue, scheduleUrgency, sortScheduleItems } from './schedule';
 import type { ScheduleItem } from '../types/dashboard';
 
 const today = new Date(2026, 9, 8, 12, 0, 0);
 
 describe('schedule helpers', () => {
+  it('validates real YYYY-MM-DD dates', () => {
+    expect(isDateValue('2026-10-08')).toBe(true);
+    expect(isDateValue('2024-02-29')).toBe(true);
+    expect(isDateValue('2026-02-29')).toBe(false);
+    expect(isDateValue('2026-99-99')).toBe(false);
+    expect(isDateValue('2026-1-1')).toBe(false);
+  });
+
   it('classifies overdue and near dates at exact boundaries', () => {
     expect(daysUntil('2026-10-07', today)).toBe(-1);
     expect(daysUntil('2026-10-08', today)).toBe(0);
