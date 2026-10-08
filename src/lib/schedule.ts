@@ -1,15 +1,31 @@
 import type { ScheduleItem } from '../types/dashboard';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+export const SCHEDULE_SOON_DAYS = 3;
 
 function dateKey(date: Date) {
   return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function parseDateKey(value: string) {
+function parseDateParts(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return Number.POSITIVE_INFINITY;
-  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return { year, month, day };
+}
+
+export function isDateValue(value: string) {
+  return parseDateParts(value) !== null;
+}
+
+function parseDateKey(value: string) {
+  const parts = parseDateParts(value);
+  if (!parts) return Number.POSITIVE_INFINITY;
+  return Date.UTC(parts.year, parts.month - 1, parts.day);
 }
 
 export function daysUntil(value: string, today = new Date()) {
@@ -22,7 +38,7 @@ export function scheduleUrgency(value: string, done: boolean, today = new Date()
   if (done) return 'normal';
   const diff = daysUntil(value, today);
   if (diff < 0) return 'overdue';
-  if (diff <= 3) return 'soon';
+  if (diff <= SCHEDULE_SOON_DAYS) return 'soon';
   return 'normal';
 }
 
