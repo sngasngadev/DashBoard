@@ -1,4 +1,5 @@
 import type { BoardNote } from '../types/dashboard';
+import { POSTIT_DEFAULT_HEIGHT, POSTIT_DEFAULT_WIDTH, POSTIT_MIN_WIDTH } from './postit';
 
 export const POSTIT_GAP = 10;
 
@@ -22,8 +23,8 @@ export function packNotes(notes: BoardNote[], canvasWidth: number, gap = POSTIT_
   const placed: PackedNote[] = [];
 
   for (const note of notes) {
-    const width = Math.min(note.width ?? 240, Math.max(180, canvasWidth));
-    const height = note.height ?? 190;
+    const width = Math.min(note.width ?? POSTIT_DEFAULT_WIDTH, Math.max(POSTIT_MIN_WIDTH, canvasWidth));
+    const height = note.height ?? POSTIT_DEFAULT_HEIGHT;
 
     const xs = new Set<number>([0]);
     const ys = new Set<number>([0]);
