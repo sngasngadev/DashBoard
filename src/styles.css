@@ -123,7 +123,6 @@ textarea { resize: none; }
   .top-header { padding: 16px 16px 10px; gap: 10px; }.dashboard-title { font-size: 22px; }.dashboard-description { font-size: 13px; }.save-status, .settings-button span { display:none; }.tabs { top: 76px; padding: 0 16px 9px; }.workspace { padding: 15px 16px 35px; }.card-body { padding: 12px; }.detail-wrapper { margin: 0; }.detail-card { min-height: calc(100vh - 170px); }.detail-card .card-body { padding: 14px; }.todo-add { grid-template-columns: 1fr; }.todo-add .button { width: 100%; }.postit, .detail-mode .postit { min-height: 150px; }
 }
 
-.detail-mode .postit { position:relative; flex:0 0 auto; min-width:180px; max-width:600px; min-height:140px; max-height:500px; }
 
 .postit-footer { display:flex; align-items:center; justify-content:flex-end; min-height:34px; }
 .postit-actions { display:flex; align-items:center; gap:2px; position:relative; }
@@ -134,10 +133,6 @@ textarea { resize: none; }
 .postit, .detail-mode .postit {
   position:relative;
   flex:0 0 auto;
-  min-width:180px;
-  max-width:600px;
-  min-height:140px;
-  max-height:500px;
 }
 .postit-resize-handle {
   position:absolute;
