@@ -1,8 +1,8 @@
 import { CARD_TYPES } from '../cards/registry';
 import type { CardType } from '../types/dashboard';
-import { CheckSquare2, FileText, StickyNote, X } from 'lucide-react';
+import { CalendarDays, CheckSquare2, FileText, StickyNote, X } from 'lucide-react';
 
-const icons = { todo: CheckSquare2, memo: FileText, memoBoard: StickyNote };
+const icons = { todo: CheckSquare2, schedule: CalendarDays, memo: FileText, memoBoard: StickyNote };
 
 export function AddCardModal({ open, onAdd, onClose }: { open: boolean; onAdd: (type: CardType) => void; onClose: () => void }) {
   if (!open) return null;
