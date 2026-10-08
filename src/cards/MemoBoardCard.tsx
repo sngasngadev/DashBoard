@@ -1,10 +1,15 @@
 import { GripVertical, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { BoardNote, MemoBoardData, NoteColor } from '../types/dashboard';
+import type { BoardNote, MemoBoardData } from '../types/dashboard';
 import { makeId } from '../lib/id';
 import { packNotes, reorderNotes } from '../lib/postitLayout';
-
-const colors: NoteColor[] = ['yellow', 'pink', 'blue', 'green', 'lavender'];
+import {
+  clampPostitHeight,
+  clampPostitWidth,
+  POSTIT_COLORS,
+  POSTIT_DEFAULT_HEIGHT,
+  POSTIT_DEFAULT_WIDTH
+} from '../lib/postit';
 export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
   data: MemoBoardData;
   onChange: (data: MemoBoardData) => void;
@@ -48,9 +53,9 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
     notes: [...data.notes, {
       id: makeId('note'),
       text: '',
-      color: colors[data.notes.length % colors.length],
-      width: 240,
-      height: 190
+      color: POSTIT_COLORS[data.notes.length % POSTIT_COLORS.length],
+      width: POSTIT_DEFAULT_WIDTH,
+      height: POSTIT_DEFAULT_HEIGHT
     }]
   });
 
@@ -141,7 +146,7 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
                   onClick={() => setOpenPalette(openPalette === note.id ? null : note.id)}
                 />
                 {openPalette === note.id && <div className="color-palette">
-                  {colors.map(color => <button
+                  {POSTIT_COLORS.map(color => <button
                     key={color}
                     type="button"
                     className={`color-dot ${color} ${note.color === color ? 'selected' : ''}`}
@@ -165,13 +170,13 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
               e.currentTarget.setPointerCapture(e.pointerId);
               const startX = e.clientX;
               const startY = e.clientY;
-              const startWidth = note.width ?? 240;
-              const startHeight = note.height ?? 190;
+              const startWidth = note.width ?? POSTIT_DEFAULT_WIDTH;
+              const startHeight = note.height ?? POSTIT_DEFAULT_HEIGHT;
               const target = e.currentTarget;
               const move = (event: PointerEvent) => {
                 patch(note.id, {
-                  width: Math.max(180, Math.min(600, startWidth + event.clientX - startX)),
-                  height: Math.max(140, Math.min(500, startHeight + event.clientY - startY))
+                  width: clampPostitWidth(startWidth + event.clientX - startX),
+                  height: clampPostitHeight(startHeight + event.clientY - startY)
                 });
               };
               const stop = () => {
