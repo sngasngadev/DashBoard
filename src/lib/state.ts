@@ -1,4 +1,4 @@
-import type { BoardNote, CardLayout, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, NoteColor, TodoData, TodoItem } from '../types/dashboard';
+import type { BoardNote, CardLayout, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, NoteColor, ScheduleData, ScheduleItem, TodoData, TodoItem } from '../types/dashboard';
 import { makeId } from './id';
 import { GRID_COLS, nextCardPosition, repairOverlaps, safeAddTilePosition } from './layout';
 
@@ -6,12 +6,14 @@ const now = () => new Date().toISOString();
 
 const defaults: Record<CardType, { title: string; w: number; h: number }> = {
   todo: { title: '할 일', w: 4, h: 7 },
+  schedule: { title: '일정', w: 5, h: 7 },
   memo: { title: '자유메모', w: 4, h: 7 },
   memoBoard: { title: '메모보드', w: 5, h: 8 }
 };
 
-function initialData(type: CardType): TodoData | MemoData | MemoBoardData {
+function initialData(type: CardType): TodoData | ScheduleData | MemoData | MemoBoardData {
   if (type === 'todo') return { items: [], completedCollapsed: false, draft: '' };
+  if (type === 'schedule') return { items: [], completedCollapsed: true, draftDate: '', draftText: '' };
   if (type === 'memo') return { html: '' };
   return { notes: [] };
 }
@@ -76,6 +78,33 @@ function normalizeTodo(value: unknown): TodoData {
   return { items, completedCollapsed: Boolean(raw.completedCollapsed), draft: str(raw.draft) };
 }
 
+function normalizeSchedule(value: unknown): ScheduleData {
+  const raw = isObject(value) ? value : {};
+  const seen = new Set<string>();
+  const items: ScheduleItem[] = Array.isArray(raw.items) ? raw.items.flatMap((item): ScheduleItem[] => {
+    if (!isObject(item)) return [];
+    const date = str(item.date);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+    let id = str(item.id, makeId('schedule'));
+    if (seen.has(id)) id = makeId('schedule');
+    seen.add(id);
+    return [{
+      id,
+      date,
+      text: str(item.text),
+      done: Boolean(item.done),
+      createdAt: str(item.createdAt, now())
+    }];
+  }) : [];
+
+  return {
+    items,
+    completedCollapsed: raw.completedCollapsed === undefined ? true : Boolean(raw.completedCollapsed),
+    draftDate: /^\d{4}-\d{2}-\d{2}$/.test(str(raw.draftDate)) ? str(raw.draftDate) : '',
+    draftText: str(raw.draftText)
+  };
+}
+
 function normalizeMemo(value: unknown): MemoData {
   const raw = isObject(value) ? value : {};
   return { html: str(raw.html) };
@@ -107,6 +136,7 @@ function normalizeCard(value: unknown): CardRecord | null {
   const type = str(value.type, 'unknown');
   const data =
     type === 'todo' ? normalizeTodo(value.data) :
+    type === 'schedule' ? normalizeSchedule(value.data) :
     type === 'memo' ? normalizeMemo(value.data) :
     type === 'memoBoard' ? normalizeBoard(value.data) :
     isObject(value.data) ? value.data : {};
