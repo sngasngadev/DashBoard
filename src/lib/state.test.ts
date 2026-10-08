@@ -78,6 +78,37 @@ describe('dashboard state', () => {
     expect(new Set(noteIds).size).toBe(noteIds.length);
   });
 
+  it('normalizes schedule cards and keeps completed section collapsed by default', () => {
+    const card = createCard('schedule', []);
+    expect(card.type).toBe('schedule');
+    expect((card.data as { completedCollapsed: boolean }).completedCollapsed).toBe(true);
+
+    const state = normalizeState({
+      version: 1,
+      cards: [{
+        id: 'schedule',
+        type: 'schedule',
+        title: '일정',
+        layout: { x: 0, y: 0, w: 5, h: 7 },
+        data: {
+          completedCollapsed: false,
+          draftDate: '2026-10-10',
+          draftText: '초안',
+          items: [
+            { id: 'a', date: '2026-10-11', text: '정상', done: false },
+            { id: 'b', date: '잘못된 날짜', text: '제외', done: false }
+          ]
+        }
+      }]
+    });
+
+    const data = state.cards[0].data as { items: unknown[]; completedCollapsed: boolean; draftDate: string; draftText: string };
+    expect(data.items).toHaveLength(1);
+    expect(data.completedCollapsed).toBe(false);
+    expect(data.draftDate).toBe('2026-10-10');
+    expect(data.draftText).toBe('초안');
+  });
+
   it('preserves unknown card payloads for future card types', () => {
     const state = normalizeState({
       version: 1,
