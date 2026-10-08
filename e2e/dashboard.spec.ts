@@ -462,3 +462,76 @@ test('todo draft survives card movement before it is added', async ({ page }) =>
   await expect(page.locator('.dashboard-card:has(.todo-card-content)').first().locator('.todo-add textarea'))
     .toHaveValue('아직 추가하지 않은 초안');
 });
+
+
+test('schedule card sorts by date, highlights urgency, and collapses completed items', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  await page.locator('.add-card-tile .add-card-action').click();
+  await page.getByRole('button', { name: /일정/ }).click();
+
+  const card = page.locator('.dashboard-card:has(input.card-title[value="일정"])');
+  await expect(card).toBeVisible();
+
+  const dates = await page.evaluate(() => {
+    const fmt = (date: Date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+    const shift = (days: number) => {
+      const date = new Date();
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() + days);
+      return fmt(date);
+    };
+    return { overdue: shift(-1), soon: shift(3), normal: shift(4) };
+  });
+
+  const dateInput = card.getByLabel('새 일정 날짜');
+  const textInput = card.getByLabel('새 일정 내용');
+  const addButton = card.getByRole('button', { name: '추가' });
+
+  await expect(addButton).toBeDisabled();
+
+  for (const item of [
+    { date: dates.normal, text: '나중 일정' },
+    { date: dates.overdue, text: '지난 일정' },
+    { date: dates.soon, text: '임박 일정' }
+  ]) {
+    await dateInput.fill(item.date);
+    await textInput.fill(item.text);
+    await addButton.click();
+  }
+
+  const rows = card.locator('.schedule-item:not(.done)');
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0).getByLabel('일정 내용')).toHaveValue('지난 일정');
+  await expect(rows.nth(1).getByLabel('일정 내용')).toHaveValue('임박 일정');
+  await expect(rows.nth(2).getByLabel('일정 내용')).toHaveValue('나중 일정');
+
+  await expect(rows.nth(0)).toHaveClass(/overdue/);
+  await expect(rows.nth(1)).toHaveClass(/soon/);
+  await expect(rows.nth(2)).toHaveClass(/normal/);
+
+  await rows.nth(1).getByLabel('일정 완료').check();
+
+  await expect(card.locator('.schedule-item:not(.done)')).toHaveCount(2);
+  const completedToggle = card.locator('.schedule-completed .completed-toggle');
+  await expect(completedToggle).toContainText('완료 1');
+  await expect(card.locator('.schedule-completed .schedule-item')).toHaveCount(0);
+
+  await completedToggle.click();
+  await expect(card.locator('.schedule-completed .schedule-item')).toHaveCount(1);
+  await expect(card.locator('.schedule-completed .schedule-item').getByLabel('일정 내용')).toHaveValue('임박 일정');
+
+  await page.waitForTimeout(500);
+  await page.reload();
+
+  const reloaded = page.locator('.dashboard-card:has(input.card-title[value="일정"])');
+  await expect(reloaded.locator('.schedule-item:not(.done)')).toHaveCount(2);
+  await expect(reloaded.locator('.schedule-completed .completed-toggle')).toContainText('완료 1');
+});
