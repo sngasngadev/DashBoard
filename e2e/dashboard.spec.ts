@@ -517,7 +517,7 @@ test('schedule card sorts by date, highlights urgency, and collapses completed i
   await expect(rows.nth(1)).toHaveClass(/soon/);
   await expect(rows.nth(2)).toHaveClass(/normal/);
 
-  await card.getByDisplayValue('임박 일정').locator('..').getByLabel('일정 완료').click();
+  await rows.nth(1).getByLabel('일정 완료').click();
 
   await expect(card.locator('.schedule-item:not(.done)')).toHaveCount(2);
   const completedToggle = card.locator('.schedule-completed .completed-toggle');
