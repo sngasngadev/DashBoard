@@ -4,7 +4,7 @@ import { GripVertical, Plus, Settings } from 'lucide-react';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './styles.css';
-import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, TodoData, TodoItem } from './types/dashboard';
+import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, ScheduleData, ScheduleItem, TodoData, TodoItem } from './types/dashboard';
 import { loadState, saveState, exportBackup, importBackup } from './lib/storage';
 import { GRID_COLS, repairOverlaps, resolveAddTileDrop, resolveCardDrop, resolveCardResize, resolveCompact, safeAddTilePosition } from './lib/layout';
 import { createCard, createInitialState } from './lib/state';
@@ -13,6 +13,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { CardShell } from './components/CardShell';
 import { TodoCard } from './cards/TodoCard';
+import { ScheduleCard } from './cards/ScheduleCard';
 import { MemoCard } from './cards/MemoCard';
 import { MemoBoardCard } from './cards/MemoBoardCard';
 
@@ -187,8 +188,14 @@ export default function App() {
     updateData(card.id, { ...data, notes: data.notes.filter(i => i.id !== note.id) });
   } });
 
+  const askScheduleDelete = (card: CardRecord, item: ScheduleItem) => setConfirm({ title: '일정을 삭제할까요?', message: item.text || item.date, action: () => {
+    const data = card.data as ScheduleData;
+    updateData(card.id, { ...data, items: data.items.filter(i => i.id !== item.id) });
+  } });
+
   const renderContent = (card: CardRecord, detail = false) => {
     if (card.type === 'todo') return <TodoCard data={card.data as TodoData} detail={detail} onChange={data => updateData(card.id, data)} onAskDelete={item => askTodoDelete(card, item)} />;
+    if (card.type === 'schedule') return <ScheduleCard data={card.data as ScheduleData} detail={detail} onChange={data => updateData(card.id, data)} onAskDelete={item => askScheduleDelete(card, item)} />;
     if (card.type === 'memo') return <MemoCard data={card.data as MemoData} detail={detail} onChange={data => updateData(card.id, data)} />;
     if (card.type === 'memoBoard') return <MemoBoardCard data={card.data as MemoBoardData} detail={detail} onChange={data => updateData(card.id, data)} onAskDelete={note => askNoteDelete(card, note)} />;
     return <div className="unsupported">지원되지 않는 카드 형식입니다.</div>;
