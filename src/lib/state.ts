@@ -1,6 +1,8 @@
-import type { BoardNote, CardLayout, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, NoteColor, ScheduleData, ScheduleItem, TodoData, TodoItem } from '../types/dashboard';
+import type { BoardNote, CardLayout, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, ScheduleData, ScheduleItem, TodoData, TodoItem } from '../types/dashboard';
 import { makeId } from './id';
-import { GRID_COLS, nextCardPosition, repairOverlaps, safeAddTilePosition } from './layout';
+import { ADD_TILE_HEIGHT, ADD_TILE_WIDTH, GRID_COLS, nextCardPosition, repairOverlaps, safeAddTilePosition } from './layout';
+import { clampPostitHeight, clampPostitWidth, POSTIT_COLORS } from './postit';
+import { isDateValue } from './schedule';
 
 const now = () => new Date().toISOString();
 
@@ -39,7 +41,7 @@ export function createInitialState(): DashboardState {
   return {
     version: 1,
     meta: { title: '나의 대시보드', description: '필요한 정보와 할 일을 한 화면에서 관리하세요.' },
-    settings: { autoCompact: true, addTileLayout: nextCardPosition([first, second], 3, 3) },
+    settings: { autoCompact: true, addTileLayout: nextCardPosition([first, second], ADD_TILE_WIDTH, ADD_TILE_HEIGHT) },
     cards: [first, second]
   };
 }
@@ -84,7 +86,7 @@ function normalizeSchedule(value: unknown): ScheduleData {
   const items: ScheduleItem[] = Array.isArray(raw.items) ? raw.items.flatMap((item): ScheduleItem[] => {
     if (!isObject(item)) return [];
     const date = str(item.date);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+    if (!isDateValue(date)) return [];
     let id = str(item.id, makeId('schedule'));
     if (seen.has(id)) id = makeId('schedule');
     seen.add(id);
@@ -100,7 +102,7 @@ function normalizeSchedule(value: unknown): ScheduleData {
   return {
     items,
     completedCollapsed: raw.completedCollapsed === undefined ? true : Boolean(raw.completedCollapsed),
-    draftDate: /^\d{4}-\d{2}-\d{2}$/.test(str(raw.draftDate)) ? str(raw.draftDate) : '',
+    draftDate: isDateValue(str(raw.draftDate)) ? str(raw.draftDate) : '',
     draftText: str(raw.draftText)
   };
 }
@@ -110,13 +112,12 @@ function normalizeMemo(value: unknown): MemoData {
   return { html: str(raw.html) };
 }
 
-const noteColors: NoteColor[] = ['yellow', 'pink', 'blue', 'green', 'lavender'];
 function normalizeBoard(value: unknown): MemoBoardData {
   const raw = isObject(value) ? value : {};
   const seen = new Set<string>();
   const notes: BoardNote[] = Array.isArray(raw.notes) ? raw.notes.flatMap((note): BoardNote[] => {
     if (!isObject(note)) return [];
-    const color = noteColors.includes(note.color as NoteColor) ? note.color as NoteColor : 'yellow';
+    const color = POSTIT_COLORS.includes(note.color as typeof POSTIT_COLORS[number]) ? note.color as typeof POSTIT_COLORS[number] : 'yellow';
     let id = str(note.id, makeId('note'));
     if (seen.has(id)) id = makeId('note');
     seen.add(id);
@@ -124,8 +125,8 @@ function normalizeBoard(value: unknown): MemoBoardData {
       id,
       text: str(note.text),
       color,
-      width: typeof note.width === 'number' && Number.isFinite(note.width) ? Math.max(180, Math.min(600, Math.round(note.width))) : undefined,
-      height: typeof note.height === 'number' && Number.isFinite(note.height) ? Math.max(140, Math.min(500, Math.round(note.height))) : undefined
+      width: typeof note.width === 'number' && Number.isFinite(note.width) ? clampPostitWidth(note.width) : undefined,
+      height: typeof note.height === 'number' && Number.isFinite(note.height) ? clampPostitHeight(note.height) : undefined
     }];
   }) : [];
   return { notes };
@@ -170,7 +171,7 @@ export function normalizeState(raw: unknown): DashboardState {
   const settings = isObject(raw.settings) ? raw.settings : {};
   const rawAddTile = isObject(settings.addTileLayout)
     ? normalizeLayout(settings.addTileLayout)
-    : nextCardPosition(cards, 3, 3);
+    : nextCardPosition(cards, ADD_TILE_WIDTH, ADD_TILE_HEIGHT);
   const addTileLayout = safeAddTilePosition(cards, rawAddTile);
 
   return {
