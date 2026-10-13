@@ -125,17 +125,19 @@ function openDashboardDatabase(root) {
     } : null;
   }
   function searchNotes(cardId, query, field='all') {
-    const q = String(query || '').trim().slice(0, 200);
-    if (!q) return listNotes(cardId);
-    // LIKE provides predictable Korean partial-word matching for short inputs.
-    // FTS trigram index can accelerate longer content searches when supported.
-    const clause = field === 'title' ? 'instr(title, ?) > 0'
-      : field === 'body' ? 'instr(plain_text, ?) > 0'
-      : '(instr(title, ?) > 0 OR instr(plain_text, ?) > 0)';
-    const args = field === 'all' ? [cardId,q,q] : [cardId,q];
-    return db.prepare(`SELECT id,card_id AS cardId,title,substr(plain_text,1,160) AS preview,
-      updated_at AS updatedAt FROM notes WHERE card_id=? AND deleted_at IS NULL AND ${clause}
-      ORDER BY sort_order,created_at,id LIMIT 500`).all(...args);
+    const q=String(query||'').trim().slice(0,200);
+    if(!q)return listNotes(cardId);
+    const condition=field==='title'?'instr(n.title,?)>0':
+      field==='body'?'instr(n.plain_text,?)>0':
+      '(instr(n.title,?)>0 OR instr(n.plain_text,?)>0)';
+    const args=field==='all'?[cardId,q,q,q,q]:[cardId,q,q,q];
+    const sql=`SELECT n.id,n.card_id AS cardId,n.title,
+      substr(n.plain_text,CASE WHEN instr(n.plain_text,?)>60
+        THEN instr(n.plain_text,?)-60 ELSE 1 END,160) AS preview,
+      n.sort_order AS sortOrder,n.updated_at AS updatedAt
+      FROM notes n WHERE n.card_id=? AND n.deleted_at IS NULL AND ${condition}
+      ORDER BY n.sort_order,n.created_at,n.id LIMIT 500`;
+    return db.prepare(sql).all(q,q,...(field==='all'?[cardId,q,q]:[cardId,q]));
   }
 
   function reorderNotes(cardId, ids) {
