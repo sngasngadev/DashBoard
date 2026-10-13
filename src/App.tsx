@@ -231,7 +231,7 @@ export default function App() {
 
       return {
         ...prev,
-        cards: result.cards,
+        cards: mergeMainCards(prev.cards,result.cards),
         settings: { ...prev.settings, addTileLayout: result.addTileLayout }
       };
     });
