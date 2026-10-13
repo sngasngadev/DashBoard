@@ -10,13 +10,15 @@ const defaults: Record<CardType, { title: string; w: number; h: number }> = {
   todo: { title: '할 일', w: 4, h: 7 },
   schedule: { title: '일정', w: 5, h: 7 },
   memo: { title: '자유메모', w: 4, h: 7 },
-  memoBoard: { title: '메모보드', w: 5, h: 8 }
+  memoBoard: { title: '메모보드', w: 5, h: 8 },
+  memoBundle: { title: '메모묶음', w: 4, h: 7 }
 };
 
 function initialData(type: CardType): TodoData | ScheduleData | MemoData | MemoBoardData {
   if (type === 'todo') return { items: [], completedCollapsed: false, draft: '' };
   if (type === 'schedule') return { items: [], completedCollapsed: true, draftDate: '', draftText: '' };
   if (type === 'memo') return { html: '' };
+  if (type === 'memoBundle') return {};
   return { notes: [] };
 }
 
