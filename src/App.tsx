@@ -193,10 +193,11 @@ export default function App() {
         ? { x: addLayout.x, y: addLayout.y, w: ADD_TILE_WIDTH, h: ADD_TILE_HEIGHT }
         : prev.settings.addTileLayout;
 
+      const shown=mainCards(prev.cards);
       const result = movedId === ADD_ID
-        ? resolveAddTileDrop(prev.cards, droppedAdd)
+        ? resolveAddTileDrop(shown, droppedAdd)
         : resolveCardDrop(
-            prev.cards,
+            shown,
             droppedAdd,
             movedId,
             { x: target.x, y: target.y, w: target.w, h: target.h },
@@ -205,7 +206,7 @@ export default function App() {
 
       return {
         ...prev,
-        cards: result.cards,
+        cards: mergeMainCards(prev.cards,result.cards),
         settings: { ...prev.settings, addTileLayout: result.addTileLayout }
       };
     });
@@ -222,7 +223,7 @@ export default function App() {
         .map(item => [item.i, { x: item.x, y: item.y, w: item.w, h: item.h }]));
 
       const result = resolveCardResize(
-        prev.cards,
+        mainCards(prev.cards),
         prev.settings.addTileLayout,
         updatedLayouts,
         prev.settings.autoCompact
