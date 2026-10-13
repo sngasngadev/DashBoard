@@ -367,3 +367,6 @@ textarea { resize: none; }
 .todo-add textarea {min-height:0;height:37px;line-height:1.35;overflow-y:auto}
 .postit .postit-delete {position:absolute;top:4px;right:4px;z-index:3}
 .postit .postit-delete:hover {background:rgba(255,255,255,.65)}
+
+/* Keep palette control clear of bottom-right resize handle. */
+.postit-footer {justify-content:flex-start;padding-left:4px}
