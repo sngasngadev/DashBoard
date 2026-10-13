@@ -16,6 +16,7 @@ import { TodoCard } from './cards/TodoCard';
 import { ScheduleCard } from './cards/ScheduleCard';
 import { MemoCard } from './cards/MemoCard';
 import { MemoBoardCard } from './cards/MemoBoardCard';
+import { TabOrderModal } from './components/TabOrderModal';
 
 const ADD_ID = '__add_card__';
 
@@ -40,6 +41,7 @@ export default function App() {
   const [selected, setSelected] = useState<string>('main');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [tabOrderOpen, setTabOrderOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [layoutRevision, setLayoutRevision] = useState(0);
@@ -148,8 +150,16 @@ export default function App() {
     setAddOpen(false);
   };
 
+  const visibleCards = useMemo(() => state.cards.filter(card => card.showOnMain !== false), [state.cards]);
+  const orderedTabs = useMemo(() => {
+    const order = state.tabOrder || [];
+    return [...state.cards].sort((a,b) => {
+      const ia=order.indexOf(a.id), ib=order.indexOf(b.id);
+      return (ia<0?Number.MAX_SAFE_INTEGER:ia)-(ib<0?Number.MAX_SAFE_INTEGER:ib);
+    });
+  }, [state.cards,state.tabOrder]);
   const layouts: Layout[] = useMemo(() => {
-    const base = state.cards.map(card => ({ i: card.id, ...card.layout, minW: 3, minH: 4 }));
+    const base = visibleCards.map(card => ({ i: card.id, ...card.layout, minW: 3, minH: 4 }));
     return [...base, {
       i: ADD_ID,
       ...state.settings.addTileLayout,
@@ -158,7 +168,7 @@ export default function App() {
       maxW: ADD_TILE_WIDTH,
       maxH: ADD_TILE_HEIGHT
     }];
-  }, [state.cards, state.settings.addTileLayout]);
+  }, [visibleCards, state.settings.addTileLayout]);
 
   const applyDragStop = (layout: Layout[], movedId: string, target: Layout) => {
     setState(prev => {
@@ -240,6 +250,7 @@ export default function App() {
     onFavorite={() => updateCard(card.id, { favorite: !card.favorite })}
     onDelete={() => askCardDelete(card)}
     onOpenDetail={() => setSelected(card.id)}>
+      {detail && <label className="main-visibility"><input type="checkbox" checked={card.showOnMain !== false} onChange={e => updateCard(card.id,{showOnMain:e.target.checked})}/> 메인에 표시</label>}
       {renderContent(card, detail)}
     </CardShell>;
 
@@ -289,16 +300,16 @@ export default function App() {
 
     <nav className="tabs" aria-label="대시보드 탭">
       <button className={selected === 'main' ? 'active' : ''} onClick={() => setSelected('main')}>메인</button>
-      {state.cards.map(card => <button key={card.id} className={selected === card.id ? 'active' : ''} onClick={() => setSelected(card.id)}>{card.favorite && '★ '}{card.title || '제목 없음'}</button>)}
+      {orderedTabs.map(card => <button key={card.id} className={selected === card.id ? 'active' : ''} onClick={() => setSelected(card.id)}>{card.favorite && '★ '}{card.title || '제목 없음'}</button>)}
     </nav>
 
     <main className="workspace" ref={gridRef}>
       {width === null ? null : selected === 'main' ? (
-        mobile ? <div className="mobile-card-stack">{state.cards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button></div>
+        mobile ? <div className="mobile-card-stack">{visibleCards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button></div>
         : <GridLayout key={layoutRevision} className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableHandle=".drag-handle" draggableCancel="textarea, input, button:not(.drag-handle), select, [contenteditable='true']" preventCollision={false} allowOverlap compactType={null}
             onDragStop={(layout, _oldItem, newItem) => applyDragStop(layout, newItem.i, newItem)}
             onResizeStop={(layout) => applyResizeStop(layout)}>
-            {state.cards.map(card => <div key={card.id}>{shell(card)}</div>)}
+            {visibleCards.map(card => <div key={card.id}>{shell(card)}</div>)}
             <div key={ADD_ID} className="add-card-tile">
               <button className="add-card-drag-handle drag-handle" type="button" aria-label="카드 추가 타일 이동" title="잡고 이동"><GripVertical size={17}/></button>
               <button className="add-card-action" type="button" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button>
@@ -308,7 +319,7 @@ export default function App() {
     </main>
 
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
-    <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
+    <SettingsModal onTabOrder={() => {setSettingsOpen(false);setTabOrderOpen(true);}} open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
       onToggleAuto={autoCompact => setState(prev => {
         if (autoCompact) {
           const result = resolveCompact(prev.cards);
@@ -335,6 +346,7 @@ export default function App() {
         return { ...prev, cards: result.cards, settings: { ...prev.settings, addTileLayout: result.addTileLayout } };
       })}
       onExport={() => exportBackup(state)} onImport={doImport} />
+    <TabOrderModal open={tabOrderOpen} cards={orderedTabs} onClose={() => setTabOrderOpen(false)} onSave={ids => {setState(prev=>({...prev,tabOrder:ids}));setTabOrderOpen(false);}} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} notice={confirm?.notice} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
   </div>;
 }
