@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GripVertical, Plus, Search, Trash2 } from 'lucide-react';
 import { makeId } from '../lib/id';
 import { RichTextEditor } from '../components/RichTextEditor';
+import { serializeRichHtml } from '../lib/richHtml';
 
 type Summary={id:string;cardId:string;title:string;preview:string;sortOrder:number};
 type Note={id:string;cardId:string;title:string;document:{html?:string};sortOrder:number;updatedAt:string};
@@ -174,7 +175,7 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
           className="bundle-rich-editor"
           onChange={html=>{dirty.current=true;setNote(current=>current?{...current,document:{html}}:null);}}
           onBlur={()=>{if(dirty.current)void persist(note);}}
-          onImage={addImage} resolveImage={resolveImage}/>
+          onImage={addImage} resolveImage={resolveImage} serialize={serializeRichHtml}/>
       </>:<p className="bundle-empty">왼쪽에서 메모를 선택하거나 새로 추가하세요.</p>}
       {error&&<p role="alert" className="bundle-error">{error}</p>}
     </section>
