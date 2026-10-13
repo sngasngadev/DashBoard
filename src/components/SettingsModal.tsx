@@ -39,10 +39,10 @@ export function SettingsModal(props: Props) {
         </section>
         <section className="settings-section">
           <h3>데이터와 다른 PC로 이동</h3>
-          <p className="setting-help">데스크톱 버전에서는 프로그램 폴더 내 SQLite에 저장합니다. 백업 파일을 정기적으로 보관하세요.</p>
+          <p className="setting-help">{window.dashboardDesktop ? '데이터는 프로그램 폴더의 SQLite에 저장되며, backups 폴더에 자동 백업됩니다.' : '이 HTML 버전은 브라우저 저장소를 사용합니다. JSON 백업을 내보낼 수 있습니다.'}</p>
           <div className="button-row">
-            <button className="button secondary" onClick={props.onExport}><Download size={17}/> 백업 내보내기</button>
-            <button className="button secondary" onClick={props.onImport}><Upload size={17}/> 백업 불러오기</button>
+            <button className="button secondary" onClick={props.onExport}><Download size={17}/> {window.dashboardDesktop ? 'SQLite 백업 생성' : 'JSON 백업 내보내기'}</button>
+            <button className="button secondary" onClick={props.onImport}><Upload size={17}/> {window.dashboardDesktop ? 'SQLite 백업 복원' : 'JSON 백업 불러오기'}</button>
           </div>
         </section>
       </div>
