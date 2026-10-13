@@ -72,7 +72,7 @@ export function RichTextEditor({html,onChange,onBlur,onImage,resolveImage,classN
       }).catch(error=>{resolved.current.delete(id);console.error('Image hydration failed:',error);});
     });
     return()=>{urls.current.forEach(URL.revokeObjectURL);urls.current=[];};
-  },[editor,resolveImage,html]);
+  },[editor,resolveImage]);
   if(!editor)return <div aria-label="편집기 불러오는 중" />;
   const action=(label:string,run:()=>void)=><button type="button" onMouseDown={e=>e.preventDefault()} onClick={run}>{label}</button>;
   return <div className={'advanced-editor '+(className||'')}>
