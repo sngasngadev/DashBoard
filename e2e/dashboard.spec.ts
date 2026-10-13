@@ -495,7 +495,8 @@ test('schedule card sorts by date, highlights urgency, and collapses completed i
   const textInput = card.getByLabel('새 일정 내용');
   const addButton = card.getByRole('button', { name: '추가' });
 
-  await expect(addButton).toBeDisabled();
+  await expect(dateInput).toHaveValue(/^\\d{4}-\\d{2}-\\d{2}$/);
+  await expect(addButton).toBeEnabled();
 
   for (const item of [
     { date: dates.normal, text: '나중 일정' },
