@@ -94,7 +94,7 @@ function openDashboardDatabase(root) {
   function upsertNote(note) {
     if (!note || typeof note.id !== 'string' || typeof note.cardId !== 'string') throw new Error('잘못된 메모');
     const documentJson=JSON.stringify(note.document || {html:''});
-    const references=[...new Set([...documentJson.matchAll(/data-attachment-id=\\?"([^"\\]+)\\?"/g)].map(match=>match[1]))];
+    const references=[...new Set([...String(note.document?.html || '').matchAll(/data-attachment-id="([^"]+)"/g)].map(match=>match[1]))];
     return db.transaction(() => {
       db.prepare(`INSERT INTO notes(id,card_id,title,document_json,plain_text,sort_order,created_at,updated_at,deleted_at,original_card_title)
         VALUES(@id,@cardId,@title,@documentJson,@plainText,@sortOrder,@createdAt,@updatedAt,NULL,'')
