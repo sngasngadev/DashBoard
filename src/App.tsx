@@ -18,6 +18,7 @@ import { MemoCard } from './cards/MemoCard';
 import { MemoBoardCard } from './cards/MemoBoardCard';
 import { TabOrderModal } from './components/TabOrderModal';
 import { MemoBundleCard } from './cards/MemoBundleCard';
+import { TrashModal } from './components/TrashModal';
 
 const ADD_ID = '__add_card__';
 
@@ -44,6 +45,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [tabOrderOpen, setTabOrderOpen] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [layoutRevision, setLayoutRevision] = useState(0);
@@ -323,7 +325,7 @@ export default function App() {
     </main>
 
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
-    <SettingsModal onTabOrder={() => {setSettingsOpen(false);setTabOrderOpen(true);}} open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
+    <SettingsModal onTrash={() => {setSettingsOpen(false);setTrashOpen(true);}} onTabOrder={() => {setSettingsOpen(false);setTabOrderOpen(true);}} open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
       onToggleAuto={autoCompact => setState(prev => {
         if (autoCompact) {
           const result = resolveCompact(prev.cards);
@@ -350,6 +352,7 @@ export default function App() {
         return { ...prev, cards: result.cards, settings: { ...prev.settings, addTileLayout: result.addTileLayout } };
       })}
       onExport={() => exportBackup(state)} onImport={doImport} />
+    <TrashModal open={trashOpen} groups={state.cards.filter(c=>c.type==='memoBundle').map(c=>({id:c.id,title:c.title}))} onClose={() => setTrashOpen(false)} />
     <TabOrderModal open={tabOrderOpen} cards={orderedTabs} onClose={() => setTabOrderOpen(false)} onSave={ids => {setState(prev=>({...prev,tabOrder:ids}));setTabOrderOpen(false);}} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} notice={confirm?.notice} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
   </div>;
