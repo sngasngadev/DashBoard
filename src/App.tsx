@@ -18,6 +18,7 @@ import { MemoCard } from './cards/MemoCard';
 import { MemoBoardCard } from './cards/MemoBoardCard';
 import { TabOrderModal } from './components/TabOrderModal';
 import { MemoBundleCard } from './cards/MemoBundleCard';
+import { mainCards, mergeMainCards, repairMainCards, setCardMainVisibility } from './lib/visibility';
 import { TrashModal } from './components/TrashModal';
 
 const ADD_ID = '__add_card__';
@@ -99,7 +100,15 @@ export default function App() {
   }, [selected, state.cards]);
 
   const updateCard = useCallback((id: string, patch: Partial<CardRecord>) => {
-    setState(prev => ({ ...prev, cards: prev.cards.map(card => card.id === id ? { ...card, ...patch, updatedAt: new Date().toISOString() } : card) }));
+    setState(prev => {
+      const cards=prev.cards.map(card=>card.id===id?{...card,...patch,updatedAt:new Date().toISOString()}:card);
+      if(patch.showOnMain===undefined)return {...prev,cards};
+      const arranged=setCardMainVisibility(cards,id,patch.showOnMain);
+      return {
+        ...prev,cards:arranged,
+        settings:{...prev.settings,addTileLayout:safeAddTilePosition(mainCards(arranged),prev.settings.addTileLayout)}
+      };
+    });
   }, []);
 
   const updateData = useCallback((id: string, data: CardRecord['data']) => updateCard(id, { data }), [updateCard]);
