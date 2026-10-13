@@ -313,3 +313,21 @@ textarea { resize: none; }
 .trash-item small {font-size:11px;color:#667085}
 .trash-preview {font-size:12px;color:#475467;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 @media(max-width:700px) {.bundle-container {grid-template-columns:1fr;grid-template-rows:220px 1fr;height:auto}.bundle-sidebar{border-right:0;border-bottom:1px solid #eaecf0}.bundle-document{min-height:440px;padding:12px}}
+
+.advanced-editor {display:flex;flex-direction:column;min-height:0;flex:1}
+.advanced-toolbar {display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:10px 0;border-bottom:1px solid #eaecf0}
+.advanced-toolbar button {border:1px solid #d0d5dd;background:white;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px}
+.advanced-toolbar button:hover {background:#eef4ff}
+.advanced-toolbar select {border:1px solid #d0d5dd;border-radius:6px;padding:5px;font-size:12px}
+.advanced-toolbar label {display:flex;align-items:center;gap:4px;font-size:11px;color:#667085}
+.advanced-toolbar input[type=color] {width:26px;height:26px;padding:0;border:1px solid #d0d5dd;background:transparent}
+.advanced-content {flex:1;min-height:0;overflow-y:auto}
+.advanced-content .tiptap {min-height:280px;padding:14px 0;outline:none;line-height:1.65;overflow-wrap:anywhere}
+.advanced-content .tiptap img {max-width:100%;height:auto}
+.advanced-content .tiptap table {border-collapse:collapse;table-layout:fixed;width:100%;margin:14px 0}
+.advanced-content .tiptap td,.advanced-content .tiptap th {border:1px solid #98a2b3;min-width:70px;padding:7px;vertical-align:top;position:relative}
+.advanced-content .tiptap .selectedCell {background:#e6f0ff}
+.advanced-content .tiptap .column-resize-handle {background:#2a6ee7;width:3px;position:absolute;top:0;bottom:0;right:-2px}
+.advanced-content .tiptap p {margin:0 0 9px}
+.advanced-content .tiptap ul,.advanced-content .tiptap ol {padding-left:26px}
+.bundle-rich-editor {width:100%;height:100%}
