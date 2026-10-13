@@ -34,6 +34,7 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
   const [drag,setDrag]=useState<string|null>(null);
   const sequence=useRef(0);
   const dirty=useRef(false);
+  const revision=useRef(0);
   const saves=useRef<Promise<unknown>>(Promise.resolve());
   const objectUrls=useRef<string[]>([]);
 
@@ -46,6 +47,7 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
 
   const persist=useCallback((value:Note|null)=>{
     if(!value||!api())return Promise.resolve();
+    const savingRevision=revision.current;
     const portable=portableHtml(value.document.html||'');
     const payload={...value,document:{html:portable},plainText:textFromHtml(portable)};
     setBusy(true);
@@ -53,7 +55,7 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
       await api()!.saveNote(payload);
       await refresh();
     });
-    return saves.current.then(()=>{dirty.current=false;setBusy(false);setError('');})
+    return saves.current.then(()=>{if(revision.current===savingRevision)dirty.current=false;setBusy(false);setError('');})
       .catch(e=>{setBusy(false);setError('저장 실패: '+String(e));});
   },[refresh]);
 
@@ -167,13 +169,13 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
     </aside>
     <section className="bundle-document">
       {note&&active===note.id?<><div className="bundle-doc-header">
-        <input aria-label="메모 제목" value={note.title} onChange={e=>{dirty.current=true;setNote({...note,title:e.target.value});}}
+        <input aria-label="메모 제목" value={note.title} onChange={e=>{revision.current+=1;dirty.current=true;setNote({...note,title:e.target.value});}}
           onBlur={()=>void persist(note)}/>
         <span>{busy?'저장 중':error?'저장 오류':'자동 저장'}</span>
       </div>
         <RichTextEditor key={note.id} html={note.document.html||''}
           className="bundle-rich-editor"
-          onChange={html=>{dirty.current=true;setNote(current=>current?{...current,document:{html}}:null);}}
+          onChange={html=>{revision.current+=1;dirty.current=true;setNote(current=>current?{...current,document:{html}}:null);}}
           onBlur={()=>{if(dirty.current)void persist(note);}}
           onImage={addImage} resolveImage={resolveImage} serialize={serializeRichHtml}/>
       </>:<p className="bundle-empty">왼쪽에서 메모를 선택하거나 새로 추가하세요.</p>}
