@@ -32,7 +32,7 @@ test('desktop user can manage the dashboard naturally', async ({ page }) => {
   await expect(page.locator('.tabs').getByRole('button', { name: '메모보드' })).toBeVisible();
 
   const boardCard = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
-  await boardCard.getByRole('button', { name: '포스트잇' }).click();
+  await boardCard.getByRole('button', { name: '포스트잇 추가' }).click();
   await boardCard.locator('.postit textarea').fill('확인할 메모');
   await boardCard.getByRole('button', { name: '포스트잇 색상 변경' }).click();
   await expect(boardCard.locator('.color-palette')).toBeVisible();
@@ -308,7 +308,7 @@ test('memo-board post-its reorder by drag and always repack without overlap', as
 
   const board = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
   for (let i = 0; i < 3; i += 1) {
-    await board.getByRole('button', { name: '포스트잇', exact: true }).click();
+    await board.getByRole('button', { name: '포스트잇 추가', exact: true }).click();
   }
 
   const notes = board.locator('.postit');
