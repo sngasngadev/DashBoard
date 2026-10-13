@@ -136,6 +136,10 @@ function openDashboardDatabase(root) {
     return db.prepare('UPDATE notes SET deleted_at=?,original_card_title=? WHERE id=? AND deleted_at IS NULL')
       .run(new Date().toISOString(), originalCardTitle || '', id).changes === 1;
   }
+  function trashCardNotes(cardId, originalCardTitle) {
+    return db.prepare('UPDATE notes SET deleted_at=?,original_card_title=? WHERE card_id=? AND deleted_at IS NULL')
+      .run(new Date().toISOString(), originalCardTitle || '', cardId).changes;
+  }
   function listTrash() {
     return db.prepare(`SELECT id,title,card_id AS originalCardId,original_card_title AS originalCardTitle,
       substr(plain_text,1,160) AS preview,deleted_at AS deletedAt FROM notes
@@ -186,7 +190,7 @@ function openDashboardDatabase(root) {
     return dest;
   }
   return { loadState, saveState, upsertNote, listNotes, getNote, searchNotes,
-    trashNote, listTrash, restoreNotes, permanentlyDeleteNotes,
+    trashNote, trashCardNotes, listTrash, restoreNotes, permanentlyDeleteNotes,
     saveAttachment, getAttachment, backup, close:()=>db.close() };
 }
 module.exports = { openDashboardDatabase };
