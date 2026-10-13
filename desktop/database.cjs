@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Database = require('better-sqlite3');
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 function openDashboardDatabase(root) {
   const dataDir = path.join(root, 'data');
@@ -72,6 +72,17 @@ function openDashboardDatabase(root) {
     })();
   }
 
+  if(version < 2){
+    db.transaction(()=>{
+      db.exec(`CREATE TABLE IF NOT EXISTS card_attachments (
+        card_id TEXT NOT NULL,
+        attachment_id TEXT NOT NULL REFERENCES attachments(id) ON DELETE RESTRICT,
+        PRIMARY KEY(card_id,attachment_id)
+      );`);
+      db.pragma('user_version = 2');
+    })();
+  }
+
   function loadState() {
     const row = db.prepare('SELECT payload FROM dashboard_state WHERE id = 1').get();
     if (!row) return null;
@@ -85,10 +96,19 @@ function openDashboardDatabase(root) {
   }
   function saveState(state) {
     if (!state || state.version !== 1 || !Array.isArray(state.cards)) throw new Error('잘못된 대시보드 데이터');
-    db.prepare(`INSERT INTO dashboard_state(id,payload,updated_at) VALUES(1,?,?)
-      ON CONFLICT(id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at`)
-      .run(JSON.stringify(state), new Date().toISOString());
-    return true;
+    return db.transaction(()=>{
+      db.prepare(`INSERT INTO dashboard_state(id,payload,updated_at) VALUES(1,?,?)
+        ON CONFLICT(id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at`)
+        .run(JSON.stringify(state),new Date().toISOString());
+      db.prepare('DELETE FROM card_attachments').run();
+      const insert=db.prepare('INSERT INTO card_attachments(card_id,attachment_id) VALUES(?,?)');
+      for(const card of state.cards){
+        if(card.type!=='memo'||typeof card.data?.html!=='string')continue;
+        const refs=[...new Set([...card.data.html.matchAll(/data-attachment-id="([^"]+)"/g)].map(match=>match[1]))];
+        for(const id of refs)insert.run(card.id,id);
+      }
+      return true;
+    })();
   }
 
   function upsertNote(note) {
@@ -184,7 +204,7 @@ function openDashboardDatabase(root) {
         count += db.prepare('DELETE FROM notes WHERE id=? AND deleted_at IS NOT NULL').run(id).changes;
       }
       // Keep attachments if still referenced; purge unused blobs only on explicit deletion.
-      db.prepare('DELETE FROM attachments WHERE NOT EXISTS (SELECT 1 FROM note_attachments WHERE attachment_id=attachments.id)').run();
+      db.prepare('DELETE FROM attachments WHERE NOT EXISTS (SELECT 1 FROM note_attachments WHERE attachment_id=attachments.id) AND NOT EXISTS (SELECT 1 FROM card_attachments WHERE attachment_id=attachments.id)').run();
       return count;
     })();
   }
