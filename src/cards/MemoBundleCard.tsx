@@ -38,6 +38,7 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
   const [drag,setDrag]=useState<string|null>(null);
+  const [dropAt,setDropAt]=useState<{id:string;after:boolean}|null>(null);
   const sequence=useRef(0);
   const dirty=useRef(false);
   const revision=useRef(0);
@@ -124,11 +125,14 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
     }catch(e){setError(String(e));}
   };
 
-  const reorder=async(from:string,to:string)=>{
+  const reorder=async(from:string,to:string,after:boolean)=>{
     if(!api()||term||from===to)return;
     const copy=[...items],src=copy.findIndex(item=>item.id===from),dest=copy.findIndex(item=>item.id===to);
     if(src<0||dest<0)return;
-    const [moved]=copy.splice(src,1);copy.splice(dest,0,moved);
+    const [moved]=copy.splice(src,1);
+    const target=copy.findIndex(item=>item.id===to);
+    if(target<0)return;
+    copy.splice(target+(after?1:0),0,moved);
     try{await api()!.reorderNotes(cardId,copy.map(item=>item.id));await refresh();}
     catch(e){setError(String(e));}
   };
@@ -151,7 +155,10 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
 
   if(!api())return <div className="bundle-empty">메모묶음은 데스크톱 버전에서 사용할 수 있습니다.</div>;
   if(!detail)return <div className="bundle-preview">{items.map(item=>
-    <button key={item.id} onClick={()=>select(item.id)}>{item.title||'제목 없음'}</button>
+    <button key={item.id} onClick={()=>select(item.id)} title={item.title||'제목 없음'}>
+      <strong>{item.title||'제목 없음'}</strong>
+      <small>{item.preview?.trim()||'미리볼 본문 없음'}</small>
+    </button>
   )}</div>;
 
   return <div className="bundle-container">
@@ -162,11 +169,12 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
         <option value="all">제목과 본문</option><option value="title">제목만</option><option value="body">본문만</option>
       </select>
       <div className="bundle-list">{items.map(item=><div key={item.id}
-        className={'bundle-list-item '+(active===item.id?'active':'')}
-        onDragOver={e=>{if(!term)e.preventDefault();}}
-        onDrop={e=>{e.preventDefault();if(drag)void reorder(drag,item.id);setDrag(null);}}>
+        className={'bundle-list-item '+(active===item.id?'active':'')+(dropAt?.id===item.id?' drop-'+(dropAt.after?'after':'before'):'')+(drag===item.id?' dragging':'')}
+        onDragOver={e=>{if(term||!drag||drag===item.id)return;e.preventDefault();e.dataTransfer.dropEffect='move';const rect=e.currentTarget.getBoundingClientRect();setDropAt({id:item.id,after:e.clientY>rect.top+rect.height/2});}}
+        onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setDropAt(null);}}
+        onDrop={e=>{e.preventDefault();if(drag&&dropAt?.id===item.id)void reorder(drag,item.id,dropAt.after);setDrag(null);setDropAt(null);}}>
         {!term&&<span draggable title="메모 순서 이동" className="bundle-grip"
-          onDragStart={()=>setDrag(item.id)} onDragEnd={()=>setDrag(null)}><GripVertical size={14}/></span>}
+          onDragStart={e=>{setDrag(item.id);e.dataTransfer.effectAllowed='move';}} onDragEnd={()=>{setDrag(null);setDropAt(null);}}><GripVertical size={14}/></span>}
         <button className="bundle-list-select" onClick={()=>select(item.id)}>
           <strong>{item.title||'제목 없음'}</strong>{term&&<small>{highlightedExcerpt(item.preview||'',term.trim())}</small>}
         </button>
