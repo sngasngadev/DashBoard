@@ -146,10 +146,12 @@ export default function App() {
     }); })(); } });
   };
 
-  const addCard = (type: CardType) => {
+  const addCard = (type: CardType,showOnMain=true) => {
     setState(prev => {
       const shown=mainCards(prev.cards);
-      const appended = [...prev.cards, createCard(type, shown)];
+      const created=createCard(type, shown);
+      created.showOnMain=showOnMain;
+      const appended = [...prev.cards,created];
       if (prev.settings.autoCompact) {
         const result = resolveCompact(mainCards(appended));
         return {
