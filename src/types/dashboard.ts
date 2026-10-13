@@ -59,7 +59,6 @@ export interface CardRecord {
   title: string;
   favorite: boolean;
   showOnMain?: boolean;
-  showOnMain?: boolean;
   layout: CardLayout;
   data: TodoData | ScheduleData | MemoData | MemoBoardData | Record<string, unknown>;
   createdAt: string;
@@ -77,6 +76,5 @@ export interface DashboardState {
     addTileLayout: CardLayout;
   };
   cards: CardRecord[];
-  tabOrder?: string[];
   tabOrder?: string[];
 }
