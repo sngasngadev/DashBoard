@@ -106,7 +106,7 @@ export default function App() {
 
   const askCardDelete = (card: CardRecord) => {
     if (card.favorite) return;
-    setConfirm({ title: '카드를 삭제할까요?', message: `“${card.title || '제목 없음'}” 카드와 카드 안의 내용이 함께 삭제됩니다.`, action: () => setState(prev => {
+    setConfirm({ title: '카드를 삭제할까요?', message: `“${card.title || '제목 없음'}” 카드와 카드 안의 내용이 함께 삭제됩니다.`, action: () => { void (async () => { if (card.type === 'memoBundle' && window.dashboardDesktop) { try { await window.dashboardDesktop.trashCardNotes(card.id, card.title); } catch (error) { setConfirm({title:'삭제 실패',message:String(error),notice:true,action:()=>undefined}); return; } } setState(prev => {
       const remaining = prev.cards.filter(item => item.id !== card.id);
       if (prev.settings.autoCompact) {
         const result = resolveCompact(remaining);
@@ -126,7 +126,7 @@ export default function App() {
           addTileLayout: safeAddTilePosition(cards, prev.settings.addTileLayout)
         }
       };
-    }) });
+    }); })(); } });
   };
 
   const addCard = (type: CardType) => {
