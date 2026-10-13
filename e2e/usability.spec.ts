@@ -48,10 +48,10 @@ test('capture representative desktop and mobile usage states', async ({ page }) 
   await page.screenshot({ path: `${dir}/02-filled-dashboard.png`, fullPage: true });
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const rich = page.locator('.detail-card .rich-editor');
+  const rich = page.locator('.detail-card .advanced-content .tiptap');
   await rich.fill('프로젝트 메모\n\n중요한 내용은 상세 화면에서 정리하고, 메인에서는 빠르게 확인한다.');
   await rich.press('Control+A');
-  await page.getByLabel('굵게').click();
+  await page.getByRole('button', { name: '굵게' }).click();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `${dir}/03-memo-detail.png`, fullPage: true });
 
