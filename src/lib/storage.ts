@@ -109,7 +109,11 @@ export async function loadState(): Promise<DashboardState> {
 // Serialize transactions to prevent an older state overwriting a newer one.
 let writeQueue: Promise<void> = Promise.resolve();
 export function saveState(state: DashboardState): Promise<boolean> {
-  if (window.dashboardDesktop) return window.dashboardDesktop.saveState(state);
+  if (window.dashboardDesktop) {
+    const operation=writeQueue.catch(()=>undefined).then(()=>window.dashboardDesktop!.saveState(state).then(()=>undefined));
+    writeQueue=operation;
+    return operation.then(()=>true);
+  }
   const serialized = JSON.stringify(state);
   const operation = writeQueue.catch(() => undefined).then(async () => {
     try {
