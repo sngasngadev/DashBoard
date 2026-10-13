@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
@@ -13,7 +16,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-audit --no-fund
+      # Bootstrap a real npm-resolved lockfile on the first run; subsequent runs are reproducible.
+      - name: Bootstrap dependency lockfile
+        run: |
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "Lock npm dependency tree for reproducible builds"
+            git push
+          fi
+      - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
