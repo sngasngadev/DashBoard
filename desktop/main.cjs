@@ -39,6 +39,8 @@ app.whenReady().then(()=>{
     return;
   }
   registerHandlers();
+  void storage.backupIfDue().catch(error=>console.error('Automatic backup failed:',error));
+  setInterval(()=>{if(storage)void storage.backupIfDue().catch(error=>console.error('Automatic backup failed:',error));},60*60*1000);
   window = new BrowserWindow({
     width:1280,height:850,minWidth:800,minHeight:600,
     webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:false}
