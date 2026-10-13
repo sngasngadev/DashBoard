@@ -1,4 +1,4 @@
-export type CardType = 'todo' | 'schedule' | 'memo' | 'memoBoard';
+export type CardType = 'todo' | 'schedule' | 'memo' | 'memoBoard' | 'memoBundle';
 
 export interface CardLayout {
   x: number;
