@@ -17,3 +17,5 @@ jobs:
         run: tail -n 160 $HOME/.npm/_logs/*-debug-0.log || true
       - run: npm test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
