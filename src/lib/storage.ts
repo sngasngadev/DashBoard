@@ -7,6 +7,17 @@ const STORE_NAME = 'state';
 const STATE_KEY = 'dashboard-state';
 const FALLBACK_KEY = 'dashboard-state-v1';
 
+function validateStoredState(value: unknown): DashboardState {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('저장된 대시보드 데이터 형식이 올바르지 않습니다.');
+  }
+  const root = value as Record<string, unknown>;
+  if (root.version !== 1 || !Array.isArray(root.cards)) {
+    throw new Error('저장된 대시보드 데이터가 손상되었거나 지원하지 않는 버전입니다.');
+  }
+  return normalizeState(value);
+}
+
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -48,50 +59,66 @@ async function idbSet(value: DashboardState): Promise<void> {
   }
 }
 
-function loadFallbackState(): DashboardState | null {
+/** Synchronous write-ahead snapshot: survives an immediate tab close. */
+export function saveEmergencySnapshot(state: DashboardState): void {
+  localStorage.setItem(FALLBACK_KEY, JSON.stringify(state));
+}
+
+function pendingSnapshot(): DashboardState | null {
+  const raw = localStorage.getItem(FALLBACK_KEY);
+  if (raw === null) return null;
   try {
-    const raw = localStorage.getItem(FALLBACK_KEY);
-    return raw ? normalizeState(JSON.parse(raw)) : null;
+    return validateStoredState(JSON.parse(raw));
   } catch {
-    return null;
+    throw new Error('임시 저장 데이터가 손상되었습니다. 기존 데이터 보호를 위해 자동 초기화를 중단했습니다.');
   }
 }
 
 export async function loadState(): Promise<DashboardState> {
-  const fallback = loadFallbackState();
-  if (fallback) {
+  // The write-ahead snapshot is newer than any unconfirmed IndexedDB write.
+  const pending = pendingSnapshot();
+  if (pending) {
     try {
-      await idbSet(fallback);
-      localStorage.removeItem(FALLBACK_KEY);
+      await idbSet(pending);
+      // Do not erase a newer snapshot written while the async transaction ran.
+      if (localStorage.getItem(FALLBACK_KEY) === JSON.stringify(pending)) {
+        localStorage.removeItem(FALLBACK_KEY);
+      }
     } catch {
-      // Keep the fallback until IndexedDB becomes writable again.
+      // Preserve the snapshot until IndexedDB can be written again.
     }
-    return fallback;
+    return pending;
   }
 
+  // A storage failure is NOT equivalent to a new/empty dashboard.
+  let stored: unknown;
   try {
-    const stored = await idbGet();
-    if (stored) return normalizeState(stored);
+    stored = await idbGet();
   } catch {
-    // Fall through to a clean initial state when no fallback exists.
+    throw new Error('저장된 데이터를 읽을 수 없습니다. 데이터를 보호하기 위해 초기화를 중단했습니다.');
   }
-
-  return normalizeState(null);
+  return stored === null ? normalizeState(null) : validateStoredState(stored);
 }
 
-export async function saveState(state: DashboardState) {
-  try {
-    await idbSet(state);
+// Serialize transactions to prevent an older state overwriting a newer one.
+let writeQueue: Promise<void> = Promise.resolve();
+export function saveState(state: DashboardState): Promise<boolean> {
+  const serialized = JSON.stringify(state);
+  const operation = writeQueue.catch(() => undefined).then(async () => {
     try {
-      localStorage.removeItem(FALLBACK_KEY);
+      await idbSet(state);
+      if (localStorage.getItem(FALLBACK_KEY) === serialized) {
+        localStorage.removeItem(FALLBACK_KEY);
+      }
     } catch {
-      // A stale fallback is harmless when localStorage itself is unavailable.
+      // A failed database write is acceptable only while its snapshot survives.
+      if (localStorage.getItem(FALLBACK_KEY) !== serialized) {
+        throw new Error('IndexedDB 저장 실패 및 안전한 임시 저장 확인 실패');
+      }
     }
-    return true;
-  } catch {
-    localStorage.setItem(FALLBACK_KEY, JSON.stringify(state));
-    return true;
-  }
+  });
+  writeQueue = operation;
+  return operation.then(() => true);
 }
 
 export async function exportBackup(state: DashboardState) {
@@ -107,15 +134,5 @@ export async function exportBackup(state: DashboardState) {
 
 export async function importBackup(file: File) {
   const parsed: unknown = JSON.parse(await file.text());
-
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('올바른 대시보드 백업 파일이 아닙니다.');
-  }
-
-  const root = parsed as Record<string, unknown>;
-  if (root.version !== 1 || !Array.isArray(root.cards)) {
-    throw new Error('지원하지 않는 백업 형식입니다.');
-  }
-
-  return normalizeState(parsed);
+  return validateStoredState(parsed);
 }
