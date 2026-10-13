@@ -8,6 +8,7 @@ interface Props {
   onCompact: () => void;
   onExport: () => void;
   onImport: () => void;
+  onTabOrder: () => void;
 }
 
 export function SettingsModal(props: Props) {
@@ -28,8 +29,12 @@ export function SettingsModal(props: Props) {
           <button className="button secondary wide" onClick={props.onCompact}><LayoutGrid size={17}/> 빈 공간 채우기</button>
         </section>
         <section className="settings-section">
+          <h3>탭 관리</h3>
+          <button className="button secondary wide" onClick={props.onTabOrder}>탭 순서 변경</button>
+        </section>
+        <section className="settings-section">
           <h3>데이터와 다른 PC로 이동</h3>
-          <p className="setting-help">이 PC에서는 브라우저 저장공간에 자동 저장됩니다. 다른 컴퓨터에서 이어서 쓰려면 백업 파일을 내보낸 뒤 새 컴퓨터에서 불러오세요.</p>
+          <p className="setting-help">데스크톱 버전에서는 프로그램 폴더 내 SQLite에 저장합니다. 백업 파일을 정기적으로 보관하세요.</p>
           <div className="button-row">
             <button className="button secondary" onClick={props.onExport}><Download size={17}/> 백업 내보내기</button>
             <button className="button secondary" onClick={props.onImport}><Upload size={17}/> 백업 불러오기</button>
