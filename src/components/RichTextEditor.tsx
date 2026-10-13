@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Bold, Italic, Underline, Strikethrough, Heading2, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Table2, Rows3, Columns3, Undo2, Trash2, PaintBucket, Baseline } from 'lucide-react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
@@ -84,33 +85,41 @@ export function RichTextEditor({html,onChange,onBlur,onImage,resolveImage,serial
   },[editor,resolveImage]);
   useEffect(()=>()=>{urls.current.forEach(URL.revokeObjectURL);urls.current=[];},[]);
   if(!editor)return <div aria-label="편집기 불러오는 중" />;
-  const action=(label:string,run:()=>void)=><button type="button" onMouseDown={e=>e.preventDefault()} onClick={run}>{label}</button>;
+  const action=(label:string,Icon:typeof Bold,run:()=>void,active=false)=>
+    <button type="button" className={'editor-icon-button'+(active?' is-active':'')} aria-label={label} title={label}
+      onMouseDown={e=>e.preventDefault()} onClick={run}><Icon size={17} strokeWidth={1.9}/></button>;
   return <div className={'advanced-editor '+(className||'')}>
     <div className="advanced-toolbar" role="toolbar" aria-label="문서 서식">
-      {action('굵게',()=>editor.chain().focus().toggleBold().run())}
-      {action('기울임',()=>editor.chain().focus().toggleItalic().run())}
-      {action('밑줄',()=>editor.chain().focus().toggleUnderline().run())}
-      {action('취소선',()=>editor.chain().focus().toggleStrike().run())}
-      {action('제목',()=>editor.chain().focus().toggleHeading({level:2}).run())}
-      {action('목록',()=>editor.chain().focus().toggleBulletList().run())}
-      {action('번호',()=>editor.chain().focus().toggleOrderedList().run())}
-      {action('왼쪽',()=>editor.chain().focus().setTextAlign('left').run())}
-      {action('가운데',()=>editor.chain().focus().setTextAlign('center').run())}
-      {action('오른쪽',()=>editor.chain().focus().setTextAlign('right').run())}
-      {action('표',()=>editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:false}).run())}
-      {action('행 추가',()=>editor.chain().focus().addRowAfter().run())}
-      {action('열 추가',()=>editor.chain().focus().addColumnAfter().run())}
-      {action('행 삭제',()=>editor.chain().focus().deleteRow().run())}
-      {action('열 삭제',()=>editor.chain().focus().deleteColumn().run())}
-      {action('실행 취소',()=>editor.chain().focus().undo().run())}
+      <div className="editor-tool-group">
+        {action('굵게',Bold,()=>editor.chain().focus().toggleBold().run(),editor.isActive('bold'))}
+        {action('기울임',Italic,()=>editor.chain().focus().toggleItalic().run(),editor.isActive('italic'))}
+        {action('밑줄',Underline,()=>editor.chain().focus().toggleUnderline().run(),editor.isActive('underline'))}
+        {action('취소선',Strikethrough,()=>editor.chain().focus().toggleStrike().run(),editor.isActive('strike'))}
+        {action('제목',Heading2,()=>editor.chain().focus().toggleHeading({level:2}).run(),editor.isActive('heading',{level:2}))}
+      </div>
+      <div className="editor-tool-group">
+        {action('목록',List,()=>editor.chain().focus().toggleBulletList().run(),editor.isActive('bulletList'))}
+        {action('번호',ListOrdered,()=>editor.chain().focus().toggleOrderedList().run(),editor.isActive('orderedList'))}
+        {action('왼쪽',AlignLeft,()=>editor.chain().focus().setTextAlign('left').run())}
+        {action('가운데',AlignCenter,()=>editor.chain().focus().setTextAlign('center').run())}
+        {action('오른쪽',AlignRight,()=>editor.chain().focus().setTextAlign('right').run())}
+      </div>
+      <div className="editor-tool-group">
+        {action('표',Table2,()=>editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:false}).run())}
+        {action('행 추가',Rows3,()=>editor.chain().focus().addRowAfter().run())}
+        {action('열 추가',Columns3,()=>editor.chain().focus().addColumnAfter().run())}
+        {action('행 삭제',Trash2,()=>editor.chain().focus().deleteRow().run())}
+        {action('열 삭제',Trash2,()=>editor.chain().focus().deleteColumn().run())}
+        {action('실행 취소',Undo2,()=>editor.chain().focus().undo().run())}
+      </div>
       <select aria-label="글꼴" defaultValue="" onChange={e=>editor.chain().focus().setFontFamily(e.target.value).run()}>
         <option value="">글꼴</option><option value="Malgun Gothic">맑은 고딕</option><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="monospace">고정폭</option>
       </select>
       <select aria-label="글자 크기" defaultValue="" onChange={e=>editor.chain().focus().setFontSize(e.target.value).run()}>
         <option value="">크기</option>{[12,14,16,18,24,30].map(n=><option key={n} value={n+'px'}>{n}px</option>)}
       </select>
-      <label>글자색 <input type="color" onChange={e=>editor.chain().focus().setColor(e.target.value).run()}/></label>
-      <label>배경색 <input type="color" onChange={e=>editor.chain().focus().setBackgroundColor(e.target.value).run()}/></label>
+      <label className="editor-color-picker" title="글자색"><Baseline size={17}/><input aria-label="글자색" type="color" onChange={e=>editor.chain().focus().setColor(e.target.value).run()}/></label>
+      <label className="editor-color-picker" title="배경색"><PaintBucket size={17}/><input aria-label="배경색" type="color" onChange={e=>editor.chain().focus().setBackgroundColor(e.target.value).run()}/></label>
     </div>
     <EditorContent editor={editor} className="advanced-content"/>
   </div>;
