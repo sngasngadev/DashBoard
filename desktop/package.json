@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
-    "pack:win": "npm run prepare:renderer && electron-packager . DashBoard --platform=win32 --arch=x64 --out=../release --overwrite --asar --prune=true",
+    "pack:win": "npm run prepare:renderer && npm run rebuild && electron-packager . DashBoard --platform=win32 --arch=x64 --out=../release --overwrite --asar.unpack=**/*.node --prune=true",
     "prepare:renderer": "node prepare-renderer.cjs",
     "test": "node --test database.test.cjs"
   },
