@@ -68,13 +68,8 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
     const copy=[...items],src=copy.findIndex(n=>n.id===from),dest=copy.findIndex(n=>n.id===to);
     if(src<0||dest<0)return;
     const [moved]=copy.splice(src,1);copy.splice(dest,0,moved);
-    try{
-      for(let i=0;i<copy.length;i++){
-        const n=await api()!.getNote(copy[i].id) as Note;
-        if(n)await api()!.saveNote({...n,sortOrder:i,plainText:copy[i].preview||''});
-      }
-      await refresh();
-    }catch(e){setError(String(e));}
+    try {await api()!.reorderNotes(cardId,copy.map(n=>n.id));await refresh();}
+    catch(e){setError(String(e));}
   };
   if(!api())return <div className="bundle-empty">메모묶음은 데스크톱 버전에서 사용할 수 있습니다.</div>;
   if(!detail)return <div className="bundle-preview">{items.map(item=><button key={item.id} onClick={()=>select(item.id)}>{item.title||'제목 없음'}</button>)}</div>;
