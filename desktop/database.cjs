@@ -198,6 +198,12 @@ function openDashboardDatabase(root) {
     const row = db.prepare('SELECT mime_type AS mimeType,data FROM attachments WHERE id=?').get(id);
     return row ? { mimeType:row.mimeType, bytes:Array.from(row.data) } : null;
   }
+  async function backupIfDue() {
+    const files=fs.readdirSync(backupDir).filter(file=>/^dashboard-.*\\.db$/.test(file));
+    const newest=Math.max(0,...files.map(file=>fs.statSync(path.join(backupDir,file)).mtimeMs));
+    if(Date.now()-newest<24*60*60*1000)return null;
+    return backup();
+  }
   async function backup() {
     const dest = path.join(backupDir,'dashboard-'+new Date().toISOString().replace(/[:.]/g,'-')+'.db');
     await db.backup(dest);
@@ -207,6 +213,6 @@ function openDashboardDatabase(root) {
   }
   return { loadState, saveState, upsertNote, listNotes, getNote, searchNotes,
     reorderNotes, trashNote, trashCardNotes, listTrash, restoreNotes, permanentlyDeleteNotes,
-    saveAttachment, getAttachment, backup, close:()=>db.close() };
+    saveAttachment, getAttachment, backup, backupIfDue, close:()=>db.close() };
 }
 module.exports = { openDashboardDatabase };
