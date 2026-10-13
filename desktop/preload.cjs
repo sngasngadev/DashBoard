@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('dashboardDesktop',{
   saveState:state=>invoke('dashboard:save',state),
   backup:()=>invoke('dashboard:backup'),
   listNotes:cardId=>invoke('notes:list',cardId),
+  reorderNotes:(cardId,ids)=>invoke('notes:reorder',cardId,ids),
   getNote:id=>invoke('notes:get',id),
   saveNote:note=>invoke('notes:save',note),
   searchNotes:(cardId,query,field)=>invoke('notes:search',cardId,query,field),
