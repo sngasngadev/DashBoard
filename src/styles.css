@@ -370,3 +370,6 @@ textarea { resize: none; }
 
 /* Keep palette control clear of bottom-right resize handle. */
 .postit-footer {justify-content:flex-start;padding-left:4px}
+
+/* With color chooser on the left, expand palette inward (not outside sticky note). */
+.postit .color-palette {left:22px;right:auto;bottom:0}
