@@ -7,6 +7,12 @@ import { serializeRichHtml } from '../lib/richHtml';
 type Summary={id:string;cardId:string;title:string;preview:string;sortOrder:number};
 type Note={id:string;cardId:string;title:string;document:{html?:string};sortOrder:number;updatedAt:string};
 const api=()=>window.dashboardDesktop;
+function highlightedExcerpt(text:string,query:string){
+  const index=query ? text.indexOf(query) : -1;
+  if(index<0)return text;
+  return <>{text.slice(0,index)}<mark>{text.slice(index,index+query.length)}</mark>{text.slice(index+query.length)}</>;
+}
+
 function textFromHtml(html:string){
   const element=document.createElement('div');
   element.innerHTML=html;
@@ -162,7 +168,7 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
         {!term&&<span draggable title="메모 순서 이동" className="bundle-grip"
           onDragStart={()=>setDrag(item.id)} onDragEnd={()=>setDrag(null)}><GripVertical size={14}/></span>}
         <button className="bundle-list-select" onClick={()=>select(item.id)}>
-          <strong>{item.title||'제목 없음'}</strong>{term&&<small>{item.preview}</small>}
+          <strong>{item.title||'제목 없음'}</strong>{term&&<small>{highlightedExcerpt(item.preview||'',term.trim())}</small>}
         </button>
         <button className="icon-button subtle" aria-label="메모 삭제" onClick={()=>void trash(item.id)}><Trash2 size={14}/></button>
       </div>)}</div>
