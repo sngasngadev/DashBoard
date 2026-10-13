@@ -75,6 +75,13 @@ export default function App() {
 
   useEffect(() => {
     if (!loaded) return;
+    if(window.dashboardDesktop){
+      let active=true;
+      void saveState(state)
+        .then(()=>{if(active)setSaveStatus('saved');})
+        .catch(()=>{if(active)setSaveStatus('error');});
+      return ()=>{active=false;};
+    }
     const id = window.setTimeout(() => {
       saveState(state)
         .then(() => setSaveStatus('saved'))
