@@ -1,5 +1,6 @@
 import type { BoardNote, CardLayout, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, ScheduleData, ScheduleItem, TodoData, TodoItem } from '../types/dashboard';
 import { makeId } from './id';
+import { mainCards, repairMainCards } from './visibility';
 import { ADD_TILE_HEIGHT, ADD_TILE_WIDTH, GRID_COLS, nextCardPosition, repairOverlaps, safeAddTilePosition } from './layout';
 import { clampPostitHeight, clampPostitWidth, POSTIT_COLORS } from './postit';
 import { isDateValue } from './schedule';
@@ -171,13 +172,13 @@ export function normalizeState(raw: unknown): DashboardState {
     return [card];
   });
 
-  const cards = repairOverlaps(normalizedCards);
+  const cards = repairMainCards(normalizedCards);
   const meta = isObject(raw.meta) ? raw.meta : {};
   const settings = isObject(raw.settings) ? raw.settings : {};
   const rawAddTile = isObject(settings.addTileLayout)
     ? normalizeLayout(settings.addTileLayout)
-    : nextCardPosition(cards, ADD_TILE_WIDTH, ADD_TILE_HEIGHT);
-  const addTileLayout = safeAddTilePosition(cards, rawAddTile);
+    : nextCardPosition(mainCards(cards), ADD_TILE_WIDTH, ADD_TILE_HEIGHT);
+  const addTileLayout = safeAddTilePosition(mainCards(cards), rawAddTile);
 
   return {
     version: 1,
