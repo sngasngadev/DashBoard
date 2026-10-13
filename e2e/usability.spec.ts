@@ -28,7 +28,7 @@ test('capture representative desktop and mobile usage states', async ({ page }) 
   await page.getByRole('button', { name: /메모보드/ }).click();
 
   const board = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
-  for (let i = 0; i < 4; i += 1) await board.getByRole('button', { name: '포스트잇', exact: true }).click();
+  for (let i = 0; i < 4; i += 1) await board.getByRole('button', { name: '포스트잇 추가', exact: true }).click();
   const notes = board.locator('.postit');
   await notes.nth(0).locator('textarea').fill('이번 주 핵심 이슈\n고객 요청사항 우선 확인');
   await notes.nth(1).locator('textarea').fill('회의에서 확인할 것');
