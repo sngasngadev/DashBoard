@@ -2,6 +2,7 @@
 const path = require('node:path');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { openDashboardDatabase } = require('./database.cjs');
+const { restoreDatabase } = require('./restore.cjs');
 
 // All user-managed data stays next to the packaged executable directory.
 const root = app.isPackaged ? path.dirname(process.execPath) : path.resolve(__dirname,'..');
@@ -13,6 +14,18 @@ function registerHandlers() {
     'dashboard:load':()=>storage.loadState(),
     'dashboard:save':(_e,state)=>storage.saveState(state),
     'dashboard:backup':()=>storage.backup(),
+    'dashboard:restore':async()=>{
+      const {dialog}=require('electron');
+      const {canceled,filePaths}=await dialog.showOpenDialog(window,{title:'SQLite 백업 복원',defaultPath:path.join(root,'backups'),properties:['openFile'],filters:[{name:'SQLite 백업',extensions:['db']}]});
+      if(canceled||!filePaths[0])return false;
+      const decision=await dialog.showMessageBox(window,{type:'warning',buttons:['취소','복원'],defaultId:0,cancelId:0,title:'백업 복원',message:'현재 대시보드 데이터를 선택한 백업으로 교체할까요?',detail:'현재 데이터는 별도 안전 백업으로 보관합니다.'});
+      if(decision.response!==1)return false;
+      const outcome=await restoreDatabase(storage,root,filePaths[0]);
+      if('recovered' in outcome){storage=outcome.recovered;throw outcome.error;}
+      storage=outcome;
+      window.webContents.reload();
+      return true;
+    },
     'notes:list':(_e,id)=>storage.listNotes(id),
     'notes:reorder':(_e,id,ids)=>storage.reorderNotes(id,ids),
     'notes:get':(_e,id)=>storage.getNote(id),
