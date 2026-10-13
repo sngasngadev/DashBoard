@@ -1,10 +1,8 @@
-import { Bold, Italic, Underline } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { RichTextEditor } from '../components/RichTextEditor';
+import { useCallback, useEffect, useRef } from 'react';
+import { makeId } from '../lib/id';
+import { serializeRichHtml, textFromRichHtml } from '../lib/richHtml';
 import type { MemoData } from '../types/dashboard';
-
-function command(name: string, value?: string) {
-  document.execCommand(name, false, value);
-}
 
 function EditableMemo({ html, className, placeholder, onChange }: {
   html: string;
@@ -32,7 +30,21 @@ function EditableMemo({ html, className, placeholder, onChange }: {
 
 export function MemoCard({ data, onChange, detail = false }: { data: MemoData; onChange: (data: MemoData) => void; detail?: boolean }) {
   const changeHtml = (html: string) => onChange({ html });
+  const addImage = useCallback(async (file: File) => {
+    if (!window.dashboardDesktop) throw new Error('이미지 첨부는 데스크톱 앱에서만 가능합니다.');
+    const id=makeId('attachment');
+    await window.dashboardDesktop.saveAttachment(id,file.type,Array.from(new Uint8Array(await file.arrayBuffer())));
+    return {src:URL.createObjectURL(file),attachmentId:id};
+  },[]);
+  const resolveImage = useCallback(async (id:string)=>{
+    const item=await window.dashboardDesktop?.getAttachment(id);
+    if(!item)throw new Error('이미지를 찾을 수 없습니다.');
+    return URL.createObjectURL(new Blob([new Uint8Array(item.bytes)],{type:item.mimeType}));
+  },[]);
 
+  if (!detail && data.html.includes('data-attachment-id=')) {
+    return <div className="simple-memo memo-with-images"><p>{textFromRichHtml(data.html)||'이미지가 포함된 메모'}</p><small>이미지 포함 문서는 상세 탭에서 편집하세요.</small></div>;
+  }
   if (!detail) {
     return <EditableMemo
       html={data.html}
@@ -42,24 +54,5 @@ export function MemoCard({ data, onChange, detail = false }: { data: MemoData; o
     />;
   }
 
-  return <div className="rich-memo">
-    <div className="editor-toolbar">
-      <button className="icon-button" aria-label="굵게" onMouseDown={e => { e.preventDefault(); command('bold'); }}><Bold size={17}/></button>
-      <button className="icon-button" aria-label="기울임" onMouseDown={e => { e.preventDefault(); command('italic'); }}><Italic size={17}/></button>
-      <button className="icon-button" aria-label="밑줄" onMouseDown={e => { e.preventDefault(); command('underline'); }}><Underline size={17}/></button>
-      <select aria-label="글꼴" defaultValue="Arial" onChange={e => command('fontName', e.target.value)}>
-        <option value="Arial">기본</option><option value="Malgun Gothic">맑은 고딕</option><option value="Georgia">Georgia</option><option value="monospace">고정폭</option>
-      </select>
-      <select aria-label="글자 크기" defaultValue="3" onChange={e => command('fontSize', e.target.value)}>
-        <option value="2">작게</option><option value="3">보통</option><option value="4">크게</option><option value="5">더 크게</option>
-      </select>
-      <label className="color-control" title="글자 색"><span>글자색</span><input type="color" onChange={e => command('foreColor', e.target.value)} /></label>
-    </div>
-    <EditableMemo
-      html={data.html}
-      className="rich-editor"
-      placeholder="메모를 입력하세요."
-      onChange={changeHtml}
-    />
-  </div>;
+  return <RichTextEditor html={data.html} onChange={changeHtml} className="rich-memo" onImage={addImage} resolveImage={resolveImage} serialize={serializeRichHtml} />;
 }

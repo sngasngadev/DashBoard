@@ -8,6 +8,8 @@ interface Props {
   onCompact: () => void;
   onExport: () => void;
   onImport: () => void;
+  onTabOrder: () => void;
+  onTrash: () => void;
 }
 
 export function SettingsModal(props: Props) {
@@ -28,11 +30,19 @@ export function SettingsModal(props: Props) {
           <button className="button secondary wide" onClick={props.onCompact}><LayoutGrid size={17}/> 빈 공간 채우기</button>
         </section>
         <section className="settings-section">
+          <h3>탭 관리</h3>
+          <button className="button secondary wide" onClick={props.onTabOrder}>탭 순서 변경</button>
+        </section>
+        <section className="settings-section">
+          <h3>휴지통</h3>
+          <button className="button secondary wide" onClick={props.onTrash}>휴지통 열기</button>
+        </section>
+        <section className="settings-section">
           <h3>데이터와 다른 PC로 이동</h3>
-          <p className="setting-help">이 PC에서는 브라우저 저장공간에 자동 저장됩니다. 다른 컴퓨터에서 이어서 쓰려면 백업 파일을 내보낸 뒤 새 컴퓨터에서 불러오세요.</p>
+          <p className="setting-help">{window.dashboardDesktop ? '데이터는 프로그램 폴더의 SQLite에 저장되며, backups 폴더에 자동 백업됩니다.' : '이 HTML 버전은 브라우저 저장소를 사용합니다. JSON 백업을 내보낼 수 있습니다.'}</p>
           <div className="button-row">
-            <button className="button secondary" onClick={props.onExport}><Download size={17}/> 백업 내보내기</button>
-            <button className="button secondary" onClick={props.onImport}><Upload size={17}/> 백업 불러오기</button>
+            <button className="button secondary" onClick={props.onExport}><Download size={17}/> {window.dashboardDesktop ? 'SQLite 백업 생성' : 'JSON 백업 내보내기'}</button>
+            <button className="button secondary" onClick={props.onImport}><Upload size={17}/> {window.dashboardDesktop ? 'SQLite 백업 복원' : 'JSON 백업 불러오기'}</button>
           </div>
         </section>
       </div>
