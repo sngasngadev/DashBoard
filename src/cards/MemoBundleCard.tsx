@@ -156,8 +156,7 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
   if(!api())return <div className="bundle-empty">메모묶음은 데스크톱 버전에서 사용할 수 있습니다.</div>;
   if(!detail)return <div className="bundle-preview">{items.map(item=>
     <button key={item.id} onClick={()=>select(item.id)} title={item.title||'제목 없음'}>
-      <strong>{item.title||'제목 없음'}</strong>
-      <small>{item.preview?.trim()||'미리볼 본문 없음'}</small>
+      <strong>{item.title||'제목 없음'}</strong><span className="bundle-preview-separator" aria-hidden="true">│</span><small>{item.preview?.trim()||'미리볼 본문 없음'}</small>
     </button>
   )}</div>;
 
