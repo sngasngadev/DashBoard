@@ -341,22 +341,22 @@ export default function App() {
     <SettingsModal onTrash={() => {setSettingsOpen(false);setTrashOpen(true);}} onTabOrder={() => {setSettingsOpen(false);setTabOrderOpen(true);}} open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
       onToggleAuto={autoCompact => setState(prev => {
         if (autoCompact) {
-          const result = resolveCompact(prev.cards);
+          const result = resolveCompact(mainCards(prev.cards));
           return {
             ...prev,
-            cards: result.cards,
+            cards: mergeMainCards(prev.cards,result.cards),
             settings: { ...prev.settings, autoCompact, addTileLayout: result.addTileLayout }
           };
         }
 
-        const cards = repairOverlaps(prev.cards);
+        const cards=repairMainCards(prev.cards);
         return {
           ...prev,
           cards,
           settings: {
             ...prev.settings,
             autoCompact,
-            addTileLayout: safeAddTilePosition(cards, prev.settings.addTileLayout)
+            addTileLayout: safeAddTilePosition(mainCards(cards), prev.settings.addTileLayout)
           }
         };
       })}
