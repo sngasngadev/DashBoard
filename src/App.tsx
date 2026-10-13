@@ -115,24 +115,25 @@ export default function App() {
 
   const askCardDelete = (card: CardRecord) => {
     if (card.favorite) return;
-    setConfirm({ title: '카드를 삭제할까요?', message: `“${card.title || '제목 없음'}” 카드와 카드 안의 내용이 함께 삭제됩니다.`, action: () => { void (async () => { if (card.type === 'memoBundle' && window.dashboardDesktop) { try { await window.dashboardDesktop.trashCardNotes(card.id, card.title); } catch (error) { setConfirm({title:'삭제 실패',message:String(error),notice:true,action:()=>undefined}); return; } } setState(prev => {
+    setConfirm({ title: '카드를 삭제할까요?', message: `“${card.title || '제목 없음'}” 카드와 카드 안의 내용이 함께 삭제됩니다.`, action: () => { void (async () => { if (card.type === 'memoBundle' && window.dashboardDesktop) { try { await window.dashboardDesktop.trashCardNotes(card.id, card.title); } catch (error) { window.alert('삭제 실패: '+String(error)); return; } } setState(prev => {
       const remaining = prev.cards.filter(item => item.id !== card.id);
       if (prev.settings.autoCompact) {
-        const result = resolveCompact(remaining);
+        const result = resolveCompact(mainCards(remaining));
         return {
           ...prev,
-          cards: result.cards,
+          cards: mergeMainCards(remaining,result.cards),
           settings: { ...prev.settings, addTileLayout: result.addTileLayout }
         };
       }
 
-      const cards = repairOverlaps(remaining);
+      const visible = repairOverlaps(mainCards(remaining));
+      const cards=mergeMainCards(remaining,visible);
       return {
         ...prev,
         cards,
         settings: {
           ...prev.settings,
-          addTileLayout: safeAddTilePosition(cards, prev.settings.addTileLayout)
+          addTileLayout: safeAddTilePosition(mainCards(cards), prev.settings.addTileLayout)
         }
       };
     }); })(); } });
@@ -140,17 +141,19 @@ export default function App() {
 
   const addCard = (type: CardType) => {
     setState(prev => {
-      const appended = [...prev.cards, createCard(type, prev.cards)];
+      const shown=mainCards(prev.cards);
+      const appended = [...prev.cards, createCard(type, shown)];
       if (prev.settings.autoCompact) {
-        const result = resolveCompact(appended);
+        const result = resolveCompact(mainCards(appended));
         return {
           ...prev,
-          cards: result.cards,
+          cards: mergeMainCards(appended,result.cards),
           settings: { ...prev.settings, addTileLayout: result.addTileLayout }
         };
       }
 
-      const cards = repairOverlaps(appended);
+      const visible = repairOverlaps(mainCards(appended));
+      const cards=mergeMainCards(appended,visible);
       return {
         ...prev,
         cards,
