@@ -17,6 +17,7 @@ import { ScheduleCard } from './cards/ScheduleCard';
 import { MemoCard } from './cards/MemoCard';
 import { MemoBoardCard } from './cards/MemoBoardCard';
 import { TabOrderModal } from './components/TabOrderModal';
+import { MemoBundleCard } from './cards/MemoBundleCard';
 
 const ADD_ID = '__add_card__';
 
@@ -39,6 +40,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string>('main');
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [tabOrderOpen, setTabOrderOpen] = useState(false);
@@ -238,6 +240,7 @@ export default function App() {
   } });
 
   const renderContent = (card: CardRecord, detail = false) => {
+    if (card.type === 'memoBundle') return <MemoBundleCard cardId={card.id} cardTitle={card.title} detail={detail} onOpen={id => {setSelectedMemoId(id);setSelected(card.id);}} />;
     if (card.type === 'todo') return <TodoCard data={card.data as TodoData} detail={detail} onChange={data => updateData(card.id, data)} onAskDelete={item => askTodoDelete(card, item)} />;
     if (card.type === 'schedule') return <ScheduleCard data={card.data as ScheduleData} detail={detail} onChange={data => updateData(card.id, data)} onAskDelete={item => askScheduleDelete(card, item)} />;
     if (card.type === 'memo') return <MemoCard data={card.data as MemoData} detail={detail} onChange={data => updateData(card.id, data)} />;
@@ -281,6 +284,7 @@ export default function App() {
   };
 
   const selectedCard = state.cards.find(card => card.id === selected);
+  useEffect(() => {if(selectedMemoId && selectedCard?.type === 'memoBundle'){window.dispatchEvent(new CustomEvent('dashboard:open-note',{detail:selectedMemoId}));setSelectedMemoId(null);}},[selectedMemoId,selectedCard]);
 
   if (loadError) return <main className="app-shell" role="alert" style={{ padding: 32 }}>
     <h1>대시보드 데이터를 불러올 수 없습니다</h1>
