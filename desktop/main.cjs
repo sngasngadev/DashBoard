@@ -1,6 +1,5 @@
 'use strict';
 const path = require('node:path');
-const fs = require('node:fs');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { openDashboardDatabase } = require('./database.cjs');
 
@@ -42,7 +41,8 @@ app.whenReady().then(()=>{
     width:1280,height:850,minWidth:800,minHeight:600,
     webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:false}
   });
-  window.loadFile(path.join(__dirname,'..','dist','index.html'));
+  window.loadFile(path.join(__dirname,'renderer','index.html'));
+  window.webContents.setWindowOpenHandler(() => ({ action:'deny' }));
 });
 app.on('window-all-closed',()=>app.quit());
 app.on('before-quit',()=>{ if(storage){storage.close();storage=null;} });
