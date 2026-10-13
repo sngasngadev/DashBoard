@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import GridLayout, { type Layout } from 'react-grid-layout';
 import { GripVertical, Plus, Settings } from 'lucide-react';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './styles.css';
 import type { BoardNote, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, ScheduleData, ScheduleItem, TodoData, TodoItem } from './types/dashboard';
-import { loadState, saveState, exportBackup, importBackup } from './lib/storage';
+import { loadState, saveState, saveEmergencySnapshot, exportBackup, importBackup } from './lib/storage';
 import { ADD_TILE_HEIGHT, ADD_TILE_WIDTH, GRID_COLS, repairOverlaps, resolveAddTileDrop, resolveCardDrop, resolveCardResize, resolveCompact, safeAddTilePosition } from './lib/layout';
 import { createCard, createInitialState } from './lib/state';
 import { AddCardModal } from './components/AddCardModal';
@@ -36,6 +36,7 @@ function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>, enabled:
 export default function App() {
   const [state, setState] = useState<DashboardState>(() => createInitialState());
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string>('main');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -43,16 +44,30 @@ export default function App() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [layoutRevision, setLayoutRevision] = useState(0);
   const gridRef = useRef<HTMLDivElement>(null);
+  const latestState = useRef(state);
   const width = useContainerWidth(gridRef, loaded);
   const mobile = width !== null && width < 760;
 
   useEffect(() => {
-    loadState().then(value => { setState(value); setLoaded(true); });
+    loadState()
+      .then(value => { setState(value); setLoaded(true); })
+      .catch(error => setLoadError(error instanceof Error ? error.message : '저장 데이터를 읽을 수 없습니다.'));
   }, []);
+
+  // Commit a synchronous crash/close-safe snapshot before the browser paints.
+  useLayoutEffect(() => {
+    if (!loaded) return;
+    latestState.current = state;
+    try {
+      saveEmergencySnapshot(state);
+      setSaveStatus('saving');
+    } catch {
+      setSaveStatus('error');
+    }
+  }, [state, loaded]);
 
   useEffect(() => {
     if (!loaded) return;
-    setSaveStatus('saving');
     const id = window.setTimeout(() => {
       saveState(state)
         .then(() => setSaveStatus('saved'))
@@ -60,6 +75,18 @@ export default function App() {
     }, 350);
     return () => window.clearTimeout(id);
   }, [state, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const flush = () => { void saveState(latestState.current).catch(() => setSaveStatus('error')); };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush(); };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [loaded]);
 
   useEffect(() => {
     if (selected !== 'main' && !state.cards.some(card => card.id === selected)) setSelected('main');
@@ -244,6 +271,11 @@ export default function App() {
 
   const selectedCard = state.cards.find(card => card.id === selected);
 
+  if (loadError) return <main className="app-shell" role="alert" style={{ padding: 32 }}>
+    <h1>대시보드 데이터를 불러올 수 없습니다</h1>
+    <p>{loadError}</p>
+    <p>기존 데이터를 덮어쓰지 않았습니다. 브라우저 저장소를 삭제하지 말고 저장소 접근 문제를 확인하세요.</p>
+  </main>;
   if (!loaded) return <div className="app-shell loading-shell" aria-label="대시보드 불러오는 중" />;
 
   return <div className="app-shell">
