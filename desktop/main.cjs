@@ -19,6 +19,7 @@ function registerHandlers() {
     'notes:search':(_e,id,q,field)=>storage.searchNotes(id,q,field),
     'notes:trash':(_e,id,title)=>storage.trashNote(id,title),
     'notes:trash-list':()=>storage.listTrash(),
+    'notes:trash-card':(_e,id,title)=>storage.trashCardNotes(id,title),
     'notes:restore':(_e,items)=>storage.restoreNotes(items),
     'notes:delete':(_e,ids)=>storage.permanentlyDeleteNotes(ids),
     'attachments:save':(_e,id,mime,bytes)=>storage.saveAttachment(id,mime,bytes),
