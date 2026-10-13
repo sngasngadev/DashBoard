@@ -361,8 +361,8 @@ export default function App() {
         };
       })}
       onCompact={() => setState(prev => {
-        const result = resolveCompact(prev.cards);
-        return { ...prev, cards: result.cards, settings: { ...prev.settings, addTileLayout: result.addTileLayout } };
+        const result = resolveCompact(mainCards(prev.cards));
+        return { ...prev, cards: mergeMainCards(prev.cards,result.cards), settings: { ...prev.settings, addTileLayout: result.addTileLayout } };
       })}
       onExport={() => {void exportBackup(state).catch(error=>setConfirm({title:'백업 실패',message:String(error),notice:true,action:()=>undefined}));}}
       onImport={() => {
