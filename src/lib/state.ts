@@ -29,6 +29,7 @@ export function createCard(type: CardType, cards: CardRecord[]): CardRecord {
     title: def.title,
     favorite: false,
     showOnMain: true,
+    showOnMain: true,
     layout: nextCardPosition(cards, def.w, def.h),
     data: initialData(type),
     createdAt: timestamp,
@@ -44,6 +45,7 @@ export function createInitialState(): DashboardState {
     meta: { title: '나의 대시보드', description: '필요한 정보와 할 일을 한 화면에서 관리하세요.' },
     settings: { autoCompact: true, addTileLayout: nextCardPosition([first, second], ADD_TILE_WIDTH, ADD_TILE_HEIGHT) },
     cards: [first, second],
+    tabOrder: [first.id, second.id],
     tabOrder: [first.id, second.id]
   };
 }
@@ -149,6 +151,7 @@ function normalizeCard(value: unknown): CardRecord | null {
     type,
     title: str(value.title, '제목 없음'),
     favorite: Boolean(value.favorite),
+    showOnMain: value.showOnMain !== false,
     showOnMain: value.showOnMain !== false,
     layout: normalizeLayout(value.layout),
     data,
