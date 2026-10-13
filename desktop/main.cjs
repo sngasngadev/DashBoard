@@ -14,6 +14,7 @@ function registerHandlers() {
     'dashboard:save':(_e,state)=>storage.saveState(state),
     'dashboard:backup':()=>storage.backup(),
     'notes:list':(_e,id)=>storage.listNotes(id),
+    'notes:reorder':(_e,id,ids)=>storage.reorderNotes(id,ids),
     'notes:get':(_e,id)=>storage.getNote(id),
     'notes:save':(_e,note)=>storage.upsertNote(note),
     'notes:search':(_e,id,q,field)=>storage.searchNotes(id,q,field),
