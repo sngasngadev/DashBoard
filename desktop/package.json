@@ -7,7 +7,8 @@
     "start": "electron .",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "pack:win": "npm run prepare:renderer && electron-packager . DashBoard --platform=win32 --arch=x64 --out=../release --overwrite --asar --prune=true",
-    "prepare:renderer": "node prepare-renderer.cjs"
+    "prepare:renderer": "node prepare-renderer.cjs",
+    "test": "node --test database.test.cjs"
   },
   "dependencies": {
     "better-sqlite3": "12.4.1"
