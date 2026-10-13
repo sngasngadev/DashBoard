@@ -132,6 +132,16 @@ function openDashboardDatabase(root) {
       ORDER BY sort_order,created_at,id LIMIT 500`).all(...args);
   }
 
+  function reorderNotes(cardId, ids) {
+    if (!Array.isArray(ids) || new Set(ids).size !== ids.length) throw new Error('잘못된 메모 순서');
+    const rows = db.prepare('SELECT id FROM notes WHERE card_id=? AND deleted_at IS NULL').all(cardId);
+    if (rows.length !== ids.length || rows.some(row => !ids.includes(row.id))) throw new Error('메모 목록이 변경되었습니다. 다시 불러오세요.');
+    return db.transaction(() => {
+      const update=db.prepare('UPDATE notes SET sort_order=? WHERE id=? AND card_id=? AND deleted_at IS NULL');
+      ids.forEach((id,index)=>update.run(index,id,cardId));
+      return true;
+    })();
+  }
   function trashNote(id, originalCardTitle) {
     return db.prepare('UPDATE notes SET deleted_at=?,original_card_title=? WHERE id=? AND deleted_at IS NULL')
       .run(new Date().toISOString(), originalCardTitle || '', id).changes === 1;
@@ -190,7 +200,7 @@ function openDashboardDatabase(root) {
     return dest;
   }
   return { loadState, saveState, upsertNote, listNotes, getNote, searchNotes,
-    trashNote, trashCardNotes, listTrash, restoreNotes, permanentlyDeleteNotes,
+    reorderNotes, trashNote, trashCardNotes, listTrash, restoreNotes, permanentlyDeleteNotes,
     saveAttachment, getAttachment, backup, close:()=>db.close() };
 }
 module.exports = { openDashboardDatabase };
