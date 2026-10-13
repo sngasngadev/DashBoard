@@ -123,11 +123,10 @@ function openDashboardDatabase(root) {
     if (!q) return listNotes(cardId);
     // LIKE provides predictable Korean partial-word matching for short inputs.
     // FTS trigram index can accelerate longer content searches when supported.
-    const pattern = '%' + q.replace(/[\\%_]/g, '\\$&') + '%';
-    const clause = field === 'title' ? 'title LIKE ? ESCAPE \'\\\''
-      : field === 'body' ? 'plain_text LIKE ? ESCAPE \'\\\''
-      : '(title LIKE ? ESCAPE \'\\\' OR plain_text LIKE ? ESCAPE \'\\\')';
-    const args = field === 'all' ? [cardId,pattern,pattern] : [cardId,pattern];
+    const clause = field === 'title' ? 'instr(title, ?) > 0'
+      : field === 'body' ? 'instr(plain_text, ?) > 0'
+      : '(instr(title, ?) > 0 OR instr(plain_text, ?) > 0)';
+    const args = field === 'all' ? [cardId,q,q] : [cardId,q];
     return db.prepare(`SELECT id,card_id AS cardId,title,substr(plain_text,1,160) AS preview,
       updated_at AS updatedAt FROM notes WHERE card_id=? AND deleted_at IS NULL AND ${clause}
       ORDER BY sort_order,created_at,id LIMIT 500`).all(...args);
