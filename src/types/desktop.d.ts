@@ -6,6 +6,7 @@ declare global {
       loadState(): Promise<DashboardState | null>;
       saveState(state: DashboardState): Promise<boolean>;
       backup(): Promise<string>;
+      restoreBackup(): Promise<boolean>;
       listNotes(cardId: string): Promise<unknown[]>;
       reorderNotes(cardId:string, ids:string[]): Promise<boolean>;
       getNote(id: string): Promise<unknown>;
