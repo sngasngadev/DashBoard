@@ -358,3 +358,12 @@ textarea { resize: none; }
 .advanced-toolbar .editor-icon-button.is-active {background:#dceaff;border-color:#9ac3ff;color:#175cd3}
 .editor-color-picker {display:inline-flex;align-items:center;gap:3px;padding:0 4px;cursor:pointer}
 .editor-color-picker input[type=color] {width:20px;height:25px;cursor:pointer}
+
+/* Compact one-line cards and input controls */
+.bundle-preview button {display:flex;flex-direction:row;align-items:center;gap:7px;min-height:32px;padding:6px 9px;white-space:nowrap}
+.bundle-preview button strong {flex:0 1 auto;max-width:45%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bundle-preview button .bundle-preview-separator {flex:none;color:#cbd5e1;font-size:12px}
+.bundle-preview button small {flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.todo-add textarea {min-height:0;height:37px;line-height:1.35;overflow-y:auto}
+.postit .postit-delete {position:absolute;top:4px;right:4px;z-index:3}
+.postit .postit-delete:hover {background:rgba(255,255,255,.65)}
