@@ -28,14 +28,21 @@ async function restoreDatabase(current,root,backupFile){
   const target=path.join(root,'data','dashboard.db');
   if(path.resolve(backupFile)===path.resolve(target))throw new Error('사용 중인 데이터베이스를 백업으로 선택할 수 없습니다.');
   validateBackup(backupFile);
-  const safety=await current.backup();
+  const staging=path.join(root,'data','restore-stage-'+Date.now()+'.db');
+  const source=new Database(backupFile,{readonly:true,fileMustExist:true});
+  try{await source.backup(staging);}finally{source.close();}
+  let safety;
+  try{safety=await current.backup();}catch(error){fs.rmSync(staging,{force:true});throw error;}
   current.close();
   try{
-    fs.copyFileSync(backupFile,target);
+    fs.copyFileSync(staging,target);
     // Every backup created by SQLite backup() is a self-contained DB.
     for(const suffix of ['-wal','-shm'])fs.rmSync(target+suffix,{force:true});
-    return openDashboardDatabase(root);
+    const restored=openDashboardDatabase(root);
+    fs.rmSync(staging,{force:true});
+    return restored;
   }catch(error){
+    fs.rmSync(staging,{force:true});
     try{
       fs.copyFileSync(safety,target);
       for(const suffix of ['-wal','-shm'])fs.rmSync(target+suffix,{force:true});
