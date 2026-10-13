@@ -20,6 +20,7 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
   const [drag,setDrag]=useState<string|null>(null);
   const editor=useRef<HTMLDivElement>(null);
   const editing=useRef(false);
+  const objectUrls=useRef<string[]>([]);
   const sequence=useRef(0);
   const refresh=async()=>{
     if(!api())return;
@@ -37,7 +38,24 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
     api()!.getNote(active).then(value=>{if(seq===sequence.current){setNote(value as Note|null);setError('');}}).catch(e=>setError(String(e)));
   },[active,detail]);
   useEffect(()=>{
-    if(editor.current&&note&&!editing.current)editor.current.innerHTML=note.document.html||'';
+    objectUrls.current.forEach(URL.revokeObjectURL);
+    objectUrls.current=[];
+    if(editor.current&&note){
+      editor.current.innerHTML=note.document.html||'';
+      const currentId=note.id;
+      editor.current.querySelectorAll<HTMLImageElement>('img[data-attachment-id]').forEach(async img=>{
+        const id=img.dataset.attachmentId;
+        if(!id||!api())return;
+        try{
+          const attachment=await api()!.getAttachment(id);
+          if(!attachment||currentId!==note.id)return;
+          const url=URL.createObjectURL(new Blob([new Uint8Array(attachment.bytes)],{type:attachment.mimeType}));
+          objectUrls.current.push(url);
+          img.src=url;
+        }catch(e){setError(String(e));}
+      });
+    }
+    return()=>{objectUrls.current.forEach(URL.revokeObjectURL);objectUrls.current=[];};
   },[note?.id]);
   const select=(id:string)=>{if(!detail){onOpen(id);return;}setActive(id);};
   useEffect(()=>{
@@ -53,6 +71,9 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
   const save=async(patch:Partial<Note>)=>{
     if(!api()||!note)return;
     const updated={...note,...patch};
+    const copy=document.createElement('div');copy.innerHTML=updated.document.html||'';
+    copy.querySelectorAll<HTMLImageElement>('img[data-attachment-id]').forEach(img=>img.removeAttribute('src'));
+    updated.document={html:copy.innerHTML};
     const html=updated.document.html||'';
     setBusy(true);
     try{await api()!.saveNote({...updated,plainText:readable(html)});setNote(updated);await refresh();setError('');}
@@ -99,6 +120,26 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
           <button onMouseDown={e=>{e.preventDefault();document.execCommand('insertHTML',false,'<table border="1"><tbody><tr><td>　</td><td>　</td></tr><tr><td>　</td><td>　</td></tr></tbody></table>');}}>표</button>
         </div>
         <div key={note.id} ref={editor} className="bundle-editor" contentEditable suppressContentEditableWarning
+          onPaste={e=>{
+            const image=[...e.clipboardData.items].find(item=>item.kind==='file'&&item.type.startsWith('image/'));
+            if(!image||!api())return;
+            const file=image.getAsFile();if(!file)return;
+            e.preventDefault();
+            const selection=window.getSelection();
+            const range=selection?.rangeCount?selection.getRangeAt(0).cloneRange():null;
+            void (async()=>{
+              try{
+                const id=makeId('attachment'), bytes=Array.from(new Uint8Array(await file.arrayBuffer()));
+                await api()!.saveAttachment(id,file.type,bytes);
+                const url=URL.createObjectURL(file);objectUrls.current.push(url);
+                const img=document.createElement('img');img.dataset.attachmentId=id;img.src=url;img.style.maxWidth='100%';img.style.width='360px';
+                if(range){range.deleteContents();range.insertNode(img);range.setStartAfter(img);range.collapse(true);}
+                else editor.current?.appendChild(img);
+                const html=editor.current?.innerHTML||'';
+                editing.current=true;setNote(current=>current?{...current,document:{html}}:null);
+              }catch(err){setError('이미지를 추가하지 못했습니다: '+String(err));}
+            })();
+          }}
           onInput={e=>{editing.current=true;const html=e.currentTarget.innerHTML;setNote(current=>current?{...current,document:{html}}:null);}}
           onBlur={e=>{editing.current=false;void save({document:{html:e.currentTarget.innerHTML}});}}
         />
