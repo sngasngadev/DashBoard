@@ -1,5 +1,6 @@
 name: Desktop Build Check
 on:
+  pull_request:
   push:
     branches: [feature/desktop-sqlite-memo-bundle]
 jobs:
