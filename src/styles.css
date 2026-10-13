@@ -333,3 +333,28 @@ textarea { resize: none; }
 .bundle-rich-editor {width:100%;height:100%}
 
 .add-main-choice{display:flex;align-items:center;gap:8px;margin:8px 0 16px;color:#475467;font-size:13px}.tab-order-grip{display:flex;align-items:center;cursor:grab;color:#98a2b3}
+
+
+/* Compact document previews on the Main dashboard. */
+.bundle-preview button {display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:9px 10px;border-bottom:1px solid #eef0f3;white-space:normal;min-height:48px}
+.bundle-preview button strong {font-size:13px;font-weight:600;color:#344054;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bundle-preview button small {font-size:11px;line-height:1.35;color:#8a94a5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Shared blue insertion indicator for memo rows and tab reorder modal. */
+.bundle-list-item,.tab-order-row {position:relative}
+.bundle-list-item.drop-before::before,.bundle-list-item.drop-after::after,
+.tab-order-row.drop-before::before,.tab-order-row.drop-after::after {
+ content:'';position:absolute;left:2px;right:2px;height:3px;border-radius:2px;background:#2374ef;z-index:5;pointer-events:none;box-shadow:0 0 0 1px #fff
+}
+.bundle-list-item.drop-before::before,.tab-order-row.drop-before::before {top:-2px}
+.bundle-list-item.drop-after::after,.tab-order-row.drop-after::after {bottom:-2px}
+.bundle-list-item.dragging,.tab-order-row.dragging {opacity:.45}
+
+/* Compact icon-first rich editor toolbar. */
+.advanced-toolbar {column-gap:9px;row-gap:7px}
+.editor-tool-group {display:flex;align-items:center;gap:2px;border-right:1px solid #e0e5ed;padding-right:8px}
+.advanced-toolbar .editor-icon-button {display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid transparent;color:#475467}
+.advanced-toolbar .editor-icon-button:hover {background:#eef4ff;border-color:#bfdbfe;color:#175cd3}
+.advanced-toolbar .editor-icon-button.is-active {background:#dceaff;border-color:#9ac3ff;color:#175cd3}
+.editor-color-picker {display:inline-flex;align-items:center;gap:3px;padding:0 4px;cursor:pointer}
+.editor-color-picker input[type=color] {width:20px;height:25px;cursor:pointer}
