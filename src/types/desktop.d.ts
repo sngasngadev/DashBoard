@@ -7,6 +7,7 @@ declare global {
       saveState(state: DashboardState): Promise<boolean>;
       backup(): Promise<string>;
       listNotes(cardId: string): Promise<unknown[]>;
+      reorderNotes(cardId:string, ids:string[]): Promise<boolean>;
       getNote(id: string): Promise<unknown>;
       saveNote(note: unknown): Promise<boolean>;
       searchNotes(cardId: string, query: string, field: string): Promise<unknown[]>;
