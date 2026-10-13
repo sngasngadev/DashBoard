@@ -394,7 +394,7 @@ test('free memo preserves Enter line breaks in main and detail views', async ({ 
   await expect(reloadedSimple).toHaveJSProperty('innerText', '첫줄\n둘째줄');
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const rich = page.locator('.detail-card .rich-editor');
+  const rich = page.locator('.detail-card .advanced-content .tiptap');
   await expect(rich).toBeVisible();
   await rich.click();
   await rich.press('End');
@@ -408,7 +408,7 @@ test('free memo preserves Enter line breaks in main and detail views', async ({ 
   await page.waitForTimeout(500);
   await page.reload();
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const richReloaded = page.locator('.detail-card .rich-editor');
+  const richReloaded = page.locator('.detail-card .advanced-content .tiptap');
   await expect(richReloaded).toContainText('셋째줄');
 });
 
@@ -419,10 +419,10 @@ test('rich memo formatting survives a later main-view edit', async ({ page }) =>
   await page.reload();
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const rich = page.locator('.detail-card .rich-editor');
+  const rich = page.locator('.detail-card .advanced-content .tiptap');
   await rich.fill('서식 유지');
   await rich.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
-  await page.getByLabel('굵게').click();
+  await page.getByRole('button', { name: '굵게' }).click();
   await expect(rich.locator('b, strong')).toContainText('서식 유지');
 
   await page.locator('.tabs').getByRole('button', { name: '메인' }).click();
@@ -432,7 +432,7 @@ test('rich memo formatting survives a later main-view edit', async ({ page }) =>
   await simple.type(' 확인');
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const richAgain = page.locator('.detail-card .rich-editor');
+  const richAgain = page.locator('.detail-card .advanced-content .tiptap');
   await expect(richAgain.locator('b, strong')).toContainText('서식 유지');
   await expect(richAgain).toContainText('확인');
 });
