@@ -14,7 +14,7 @@ const defaults: Record<CardType, { title: string; w: number; h: number }> = {
   memoBundle: { title: '메모묶음', w: 4, h: 7 }
 };
 
-function initialData(type: CardType): TodoData | ScheduleData | MemoData | MemoBoardData {
+function initialData(type: CardType): TodoData | ScheduleData | MemoData | MemoBoardData | Record<string, unknown> {
   if (type === 'todo') return { items: [], completedCollapsed: false, draft: '' };
   if (type === 'schedule') return { items: [], completedCollapsed: true, draftDate: '', draftText: '' };
   if (type === 'memo') return { html: '' };
