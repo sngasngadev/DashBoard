@@ -93,17 +93,23 @@ function openDashboardDatabase(root) {
 
   function upsertNote(note) {
     if (!note || typeof note.id !== 'string' || typeof note.cardId !== 'string') throw new Error('잘못된 메모');
-    db.prepare(`INSERT INTO notes(id,card_id,title,document_json,plain_text,sort_order,created_at,updated_at,deleted_at,original_card_title)
-      VALUES(@id,@cardId,@title,@documentJson,@plainText,@sortOrder,@createdAt,@updatedAt,NULL,'')
-      ON CONFLICT(id) DO UPDATE SET title=excluded.title,document_json=excluded.document_json,
-      plain_text=excluded.plain_text,sort_order=excluded.sort_order,updated_at=excluded.updated_at`)
-      .run({
-        id: note.id, cardId: note.cardId, title: note.title || '',
-        documentJson: JSON.stringify(note.document || {type:'doc',content:[]}),
-        plainText: note.plainText || '', sortOrder: note.sortOrder || 0,
-        createdAt: note.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString()
-      });
-    return true;
+    const documentJson=JSON.stringify(note.document || {html:''});
+    const references=[...new Set([...documentJson.matchAll(/data-attachment-id=\\?"([^"\\]+)\\?"/g)].map(match=>match[1]))];
+    return db.transaction(() => {
+      db.prepare(`INSERT INTO notes(id,card_id,title,document_json,plain_text,sort_order,created_at,updated_at,deleted_at,original_card_title)
+        VALUES(@id,@cardId,@title,@documentJson,@plainText,@sortOrder,@createdAt,@updatedAt,NULL,'')
+        ON CONFLICT(id) DO UPDATE SET title=excluded.title,document_json=excluded.document_json,
+        plain_text=excluded.plain_text,sort_order=excluded.sort_order,updated_at=excluded.updated_at`)
+        .run({
+          id: note.id,cardId:note.cardId,title:note.title || '',
+          documentJson,plainText:note.plainText || '',sortOrder:note.sortOrder ?? 0,
+          createdAt:note.createdAt || new Date().toISOString(),updatedAt:new Date().toISOString()
+        });
+      db.prepare('DELETE FROM note_attachments WHERE note_id=?').run(note.id);
+      const insert=db.prepare('INSERT INTO note_attachments(note_id,attachment_id) VALUES(?,?)');
+      for(const id of references)insert.run(note.id,id);
+      return true;
+    })();
   }
 
   function listNotes(cardId) {
