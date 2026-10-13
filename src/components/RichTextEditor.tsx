@@ -6,7 +6,7 @@ import Image from '@tiptap/extension-image';
 import { TextStyleKit } from '@tiptap/extension-text-style';
 import TextAlign from '@tiptap/extension-text-align';
 
-type Props={html:string;onChange:(html:string)=>void;onBlur?:()=>void;onImage?:(file:File)=>Promise<{src:string;attachmentId?:string}>;className?:string};
+type Props={html:string;onChange:(html:string)=>void;onBlur?:()=>void;onImage?:(file:File)=>Promise<{src:string;attachmentId?:string}>;resolveImage?:(id:string)=>Promise<string>;className?:string};
 const AttachmentImage=Image.extend({
   addAttributes(){
     return {...this.parent?.(), attachmentId:{
@@ -21,9 +21,11 @@ const extensions=[
   AttachmentImage,TextStyleKit,
   TextAlign.configure({types:['heading','paragraph']})
 ];
-export function RichTextEditor({html,onChange,onBlur,onImage,className}:Props){
+export function RichTextEditor({html,onChange,onBlur,onImage,resolveImage,className}:Props){
   const callback=useRef(onChange),blur=useRef(onBlur),image=useRef(onImage);
   callback.current=onChange;blur.current=onBlur;image.current=onImage;
+  const resolved=useRef(new Set<string>());
+  const urls=useRef<string[]>([]);
   const editor=useEditor({
     extensions, content:html||'<p></p>',
     onUpdate:({editor})=>callback.current(editor.getHTML()),
@@ -48,6 +50,29 @@ export function RichTextEditor({html,onChange,onBlur,onImage,className}:Props){
     if(!editor||editor.isDestroyed)return;
     if(editor.getHTML()!==(html||'<p></p>'))editor.commands.setContent(html||'<p></p>',{emitUpdate:false});
   },[editor,html]);
+  useEffect(()=>{
+    if(!editor||!resolveImage)return;
+    editor.state.doc.descendants((node,pos)=>{
+      if(node.type.name!=='image'||!node.attrs.attachmentId||resolved.current.has(node.attrs.attachmentId))return;
+      const id=String(node.attrs.attachmentId);
+      resolved.current.add(id);
+      void resolveImage(id).then(src=>{
+        if(editor.isDestroyed){URL.revokeObjectURL(src);return;}
+        urls.current.push(src);
+        const tr=editor.state.tr;
+        let target=-1;
+        editor.state.doc.descendants((candidate,at)=>{
+          if(candidate.type.name==='image'&&candidate.attrs.attachmentId===id){target=at;return false;}
+          return true;
+        });
+        if(target>=0){
+          const item=editor.state.doc.nodeAt(target);
+          if(item)editor.view.dispatch(tr.setNodeMarkup(target,undefined,{...item.attrs,src}));
+        }
+      }).catch(error=>{resolved.current.delete(id);console.error('Image hydration failed:',error);});
+    });
+    return()=>{urls.current.forEach(URL.revokeObjectURL);urls.current=[];};
+  },[editor,resolveImage,html]);
   if(!editor)return <div aria-label="편집기 불러오는 중" />;
   const action=(label:string,run:()=>void)=><button type="button" onMouseDown={e=>e.preventDefault()} onClick={run}>{label}</button>;
   return <div className={'advanced-editor '+(className||'')}>
