@@ -7,22 +7,24 @@ export function TabOrderModal({open,cards,onClose,onSave}:{
 }) {
   const [ids,setIds]=useState<string[]>([]);
   const [dragId,setDragId]=useState<string|null>(null);
+  const [dropAt,setDropAt]=useState<{id:string;after:boolean}|null>(null);
   useEffect(()=>{if(open)setIds(cards.map(card=>card.id));},[open]);
   if(!open)return null;
   const byId=new Map(cards.map(card=>[card.id,card]));
-  const move=(from:string,to:string)=>{
+  const move=(from:string,to:string,after:boolean)=>{
     if(from===to)return;
-    setIds(prev=>{const copy=prev.filter(id=>id!==from);copy.splice(copy.indexOf(to),0,from);return copy;});
+    setIds(prev=>{const copy=prev.filter(id=>id!==from);const target=copy.indexOf(to);if(target<0)return prev;copy.splice(target+(after?1:0),0,from);return copy;});
   };
   return <div className="modal-backdrop" onMouseDown={onClose}>
     <div className="modal settings-modal" onMouseDown={event=>event.stopPropagation()}>
       <div className="modal-heading"><div><h2>탭 순서 변경</h2><p>핸들을 잡고 이동하세요. 메인 탭은 고정됩니다.</p></div><button className="icon-button" onClick={onClose} aria-label="닫기"><X size={19}/></button></div>
       <div className="tab-order-row"><span>메인</span><small>고정</small></div>
-      {ids.map(id=><div className="tab-order-row" key={id}
-        onDragOver={event=>event.preventDefault()}
-        onDrop={event=>{event.preventDefault();if(dragId)move(dragId,id);setDragId(null);}}
+      {ids.map(id=><div className={'tab-order-row'+(dropAt?.id===id?' drop-'+(dropAt.after?'after':'before'):'')+(dragId===id?' dragging':'')} key={id}
+        onDragOver={event=>{if(!dragId||dragId===id)return;event.preventDefault();event.dataTransfer.dropEffect='move';const rect=event.currentTarget.getBoundingClientRect();setDropAt({id,after:event.clientY>rect.top+rect.height/2});}}
+        onDragLeave={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node))setDropAt(null);}}
+        onDrop={event=>{event.preventDefault();if(dragId&&dropAt?.id===id)move(dragId,id,dropAt.after);setDragId(null);setDropAt(null);}}
         >
-        <span draggable className="tab-order-grip" title="핸들을 잡고 이동" onDragStart={event=>{setDragId(id);event.dataTransfer.effectAllowed='move';}} onDragEnd={()=>setDragId(null)}><GripVertical size={17}/></span><span>{byId.get(id)?.title||'제목 없음'}</span>
+        <span draggable className="tab-order-grip" title="핸들을 잡고 이동" onDragStart={event=>{setDragId(id);event.dataTransfer.effectAllowed='move';}} onDragEnd={()=>{setDragId(null);setDropAt(null);}}><GripVertical size={17}/></span><span>{byId.get(id)?.title||'제목 없음'}</span>
       </div>)}
       <div className="button-row"><button className="button secondary" onClick={onClose}>취소</button><button className="button primary" onClick={()=>onSave(ids)}>완료</button></div>
     </div>
