@@ -333,14 +333,14 @@ export default function App() {
 
     <main className="workspace" ref={gridRef}>
       {width === null ? null : selected === 'main' ? (
-        mobile ? <div className="mobile-card-stack">{visibleCards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button></div>
+        mobile ? <div className="mobile-card-stack">{visibleCards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong></button></div>
         : <GridLayout key={layoutRevision} className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableHandle=".drag-handle" draggableCancel="textarea, input, button:not(.drag-handle), select, [contenteditable='true']" preventCollision={false} allowOverlap compactType={null}
             onDragStop={(layout, _oldItem, newItem) => applyDragStop(layout, newItem.i, newItem)}
             onResizeStop={(layout) => applyResizeStop(layout)}>
             {visibleCards.map(card => <div key={card.id}>{shell(card)}</div>)}
             <div key={ADD_ID} className="add-card-tile">
               <button className="add-card-drag-handle drag-handle" type="button" aria-label="카드 추가 타일 이동" title="잡고 이동"><GripVertical size={17}/></button>
-              <button className="add-card-action" type="button" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button>
+              <button className="add-card-action" type="button" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong></button>
             </div>
           </GridLayout>
       ) : selectedCard ? <div className="detail-wrapper">{shell(selectedCard, true)}</div> : null}
