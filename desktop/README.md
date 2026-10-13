@@ -14,6 +14,6 @@ This branch is the new Windows desktop baseline, separate from the existing HTML
 ## Local development (requires access to npm registry)
 1. Run `npm install` and `npm run build` in repository root.
 2. In `desktop/`, run `npm install`, `npx electron-rebuild -f -w better-sqlite3`, and `npm start`.
-3. Produce a Windows unpacked directory with `npm run pack:win` in `desktop/` after building the renderer.
+3. Produce a Windows unpacked directory with `npm run pack:win` in `desktop/` after building the renderer. The prepare step copies dist/ into desktop/renderer/.
 
 IMPORTANT: Packaging scripts and native module compatibility need validation on Windows CI before a release. This is not a distributable release yet.
