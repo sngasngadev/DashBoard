@@ -351,7 +351,12 @@ export default function App() {
         const result = resolveCompact(prev.cards);
         return { ...prev, cards: result.cards, settings: { ...prev.settings, addTileLayout: result.addTileLayout } };
       })}
-      onExport={() => exportBackup(state)} onImport={doImport} />
+      onExport={() => {void exportBackup(state).catch(error=>setConfirm({title:'백업 실패',message:String(error),notice:true,action:()=>undefined}));}}
+      onImport={() => {
+        if(window.dashboardDesktop){
+          void window.dashboardDesktop.restoreBackup().catch(error=>setConfirm({title:'복원 실패',message:String(error),notice:true,action:()=>undefined}));
+        }else{void doImport();}
+      }} />
     <TrashModal open={trashOpen} groups={state.cards.filter(c=>c.type==='memoBundle').map(c=>({id:c.id,title:c.title}))} onClose={() => setTrashOpen(false)} />
     <TabOrderModal open={tabOrderOpen} cards={orderedTabs} onClose={() => setTabOrderOpen(false)} onSave={ids => {setState(prev=>({...prev,tabOrder:ids}));setTabOrderOpen(false);}} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} notice={confirm?.notice} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
