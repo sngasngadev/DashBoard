@@ -9,6 +9,7 @@ interface Props {
   onExport: () => void;
   onImport: () => void;
   onTabOrder: () => void;
+  onTrash: () => void;
 }
 
 export function SettingsModal(props: Props) {
@@ -31,6 +32,10 @@ export function SettingsModal(props: Props) {
         <section className="settings-section">
           <h3>탭 관리</h3>
           <button className="button secondary wide" onClick={props.onTabOrder}>탭 순서 변경</button>
+        </section>
+        <section className="settings-section">
+          <h3>휴지통</h3>
+          <button className="button secondary wide" onClick={props.onTrash}>휴지통 열기</button>
         </section>
         <section className="settings-section">
           <h3>데이터와 다른 PC로 이동</h3>
