@@ -16,6 +16,10 @@ import { TodoCard } from './cards/TodoCard';
 import { ScheduleCard } from './cards/ScheduleCard';
 import { MemoCard } from './cards/MemoCard';
 import { MemoBoardCard } from './cards/MemoBoardCard';
+import { TabOrderModal } from './components/TabOrderModal';
+import { MemoBundleCard } from './cards/MemoBundleCard';
+import { mainCards, mergeMainCards, repairMainCards, setCardMainVisibility } from './lib/visibility';
+import { TrashModal } from './components/TrashModal';
 
 const ADD_ID = '__add_card__';
 
@@ -38,8 +42,11 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string>('main');
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [tabOrderOpen, setTabOrderOpen] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [layoutRevision, setLayoutRevision] = useState(0);
@@ -68,6 +75,13 @@ export default function App() {
 
   useEffect(() => {
     if (!loaded) return;
+    if(window.dashboardDesktop){
+      let active=true;
+      void saveState(state)
+        .then(()=>{if(active)setSaveStatus('saved');})
+        .catch(()=>{if(active)setSaveStatus('error');});
+      return ()=>{active=false;};
+    }
     const id = window.setTimeout(() => {
       saveState(state)
         .then(() => setSaveStatus('saved'))
@@ -93,49 +107,62 @@ export default function App() {
   }, [selected, state.cards]);
 
   const updateCard = useCallback((id: string, patch: Partial<CardRecord>) => {
-    setState(prev => ({ ...prev, cards: prev.cards.map(card => card.id === id ? { ...card, ...patch, updatedAt: new Date().toISOString() } : card) }));
+    setState(prev => {
+      const cards=prev.cards.map(card=>card.id===id?{...card,...patch,updatedAt:new Date().toISOString()}:card);
+      if(patch.showOnMain===undefined)return {...prev,cards};
+      const arranged=setCardMainVisibility(cards,id,patch.showOnMain);
+      return {
+        ...prev,cards:arranged,
+        settings:{...prev.settings,addTileLayout:safeAddTilePosition(mainCards(arranged),prev.settings.addTileLayout)}
+      };
+    });
   }, []);
 
   const updateData = useCallback((id: string, data: CardRecord['data']) => updateCard(id, { data }), [updateCard]);
 
   const askCardDelete = (card: CardRecord) => {
     if (card.favorite) return;
-    setConfirm({ title: '카드를 삭제할까요?', message: `“${card.title || '제목 없음'}” 카드와 카드 안의 내용이 함께 삭제됩니다.`, action: () => setState(prev => {
+    setConfirm({ title: '카드를 삭제할까요?', message: `“${card.title || '제목 없음'}” 카드와 카드 안의 내용이 함께 삭제됩니다.`, action: () => { void (async () => { if (card.type === 'memoBundle' && window.dashboardDesktop) { try { await window.dashboardDesktop.trashCardNotes(card.id, card.title); } catch (error) { window.alert('삭제 실패: '+String(error)); return; } } setState(prev => {
       const remaining = prev.cards.filter(item => item.id !== card.id);
       if (prev.settings.autoCompact) {
-        const result = resolveCompact(remaining);
+        const result = resolveCompact(mainCards(remaining));
         return {
           ...prev,
-          cards: result.cards,
+          cards: mergeMainCards(remaining,result.cards),
           settings: { ...prev.settings, addTileLayout: result.addTileLayout }
         };
       }
 
-      const cards = repairOverlaps(remaining);
+      const visible = repairOverlaps(mainCards(remaining));
+      const cards=mergeMainCards(remaining,visible);
       return {
         ...prev,
         cards,
         settings: {
           ...prev.settings,
-          addTileLayout: safeAddTilePosition(cards, prev.settings.addTileLayout)
+          addTileLayout: safeAddTilePosition(mainCards(cards), prev.settings.addTileLayout)
         }
       };
-    }) });
+    }); })(); } });
   };
 
-  const addCard = (type: CardType) => {
+  const addCard = (type: CardType,showOnMain=true) => {
     setState(prev => {
-      const appended = [...prev.cards, createCard(type, prev.cards)];
+      const shown=mainCards(prev.cards);
+      const created=createCard(type, shown);
+      created.showOnMain=showOnMain;
+      const appended = [...prev.cards,created];
       if (prev.settings.autoCompact) {
-        const result = resolveCompact(appended);
+        const result = resolveCompact(mainCards(appended));
         return {
           ...prev,
-          cards: result.cards,
+          cards: mergeMainCards(appended,result.cards),
           settings: { ...prev.settings, addTileLayout: result.addTileLayout }
         };
       }
 
-      const cards = repairOverlaps(appended);
+      const visible = repairOverlaps(mainCards(appended));
+      const cards=mergeMainCards(appended,visible);
       return {
         ...prev,
         cards,
@@ -148,8 +175,16 @@ export default function App() {
     setAddOpen(false);
   };
 
+  const visibleCards = useMemo(() => state.cards.filter(card => card.showOnMain !== false), [state.cards]);
+  const orderedTabs = useMemo(() => {
+    const order = state.tabOrder || [];
+    return [...state.cards].sort((a,b) => {
+      const ia=order.indexOf(a.id), ib=order.indexOf(b.id);
+      return (ia<0?Number.MAX_SAFE_INTEGER:ia)-(ib<0?Number.MAX_SAFE_INTEGER:ib);
+    });
+  }, [state.cards,state.tabOrder]);
   const layouts: Layout[] = useMemo(() => {
-    const base = state.cards.map(card => ({ i: card.id, ...card.layout, minW: 3, minH: 4 }));
+    const base = visibleCards.map(card => ({ i: card.id, ...card.layout, minW: 3, minH: 4 }));
     return [...base, {
       i: ADD_ID,
       ...state.settings.addTileLayout,
@@ -158,7 +193,7 @@ export default function App() {
       maxW: ADD_TILE_WIDTH,
       maxH: ADD_TILE_HEIGHT
     }];
-  }, [state.cards, state.settings.addTileLayout]);
+  }, [visibleCards, state.settings.addTileLayout]);
 
   const applyDragStop = (layout: Layout[], movedId: string, target: Layout) => {
     setState(prev => {
@@ -167,10 +202,11 @@ export default function App() {
         ? { x: addLayout.x, y: addLayout.y, w: ADD_TILE_WIDTH, h: ADD_TILE_HEIGHT }
         : prev.settings.addTileLayout;
 
+      const shown=mainCards(prev.cards);
       const result = movedId === ADD_ID
-        ? resolveAddTileDrop(prev.cards, droppedAdd)
+        ? resolveAddTileDrop(shown, droppedAdd)
         : resolveCardDrop(
-            prev.cards,
+            shown,
             droppedAdd,
             movedId,
             { x: target.x, y: target.y, w: target.w, h: target.h },
@@ -179,7 +215,7 @@ export default function App() {
 
       return {
         ...prev,
-        cards: result.cards,
+        cards: mergeMainCards(prev.cards,result.cards),
         settings: { ...prev.settings, addTileLayout: result.addTileLayout }
       };
     });
@@ -196,7 +232,7 @@ export default function App() {
         .map(item => [item.i, { x: item.x, y: item.y, w: item.w, h: item.h }]));
 
       const result = resolveCardResize(
-        prev.cards,
+        mainCards(prev.cards),
         prev.settings.addTileLayout,
         updatedLayouts,
         prev.settings.autoCompact
@@ -204,7 +240,7 @@ export default function App() {
 
       return {
         ...prev,
-        cards: result.cards,
+        cards: mergeMainCards(prev.cards,result.cards),
         settings: { ...prev.settings, addTileLayout: result.addTileLayout }
       };
     });
@@ -228,6 +264,7 @@ export default function App() {
   } });
 
   const renderContent = (card: CardRecord, detail = false) => {
+    if (card.type === 'memoBundle') return <MemoBundleCard cardId={card.id} cardTitle={card.title} detail={detail} onOpen={id => {setSelectedMemoId(id);setSelected(card.id);}} />;
     if (card.type === 'todo') return <TodoCard data={card.data as TodoData} detail={detail} onChange={data => updateData(card.id, data)} onAskDelete={item => askTodoDelete(card, item)} />;
     if (card.type === 'schedule') return <ScheduleCard data={card.data as ScheduleData} detail={detail} onChange={data => updateData(card.id, data)} onAskDelete={item => askScheduleDelete(card, item)} />;
     if (card.type === 'memo') return <MemoCard data={card.data as MemoData} detail={detail} onChange={data => updateData(card.id, data)} />;
@@ -240,6 +277,7 @@ export default function App() {
     onFavorite={() => updateCard(card.id, { favorite: !card.favorite })}
     onDelete={() => askCardDelete(card)}
     onOpenDetail={() => setSelected(card.id)}>
+      {detail && <label className="main-visibility"><input type="checkbox" checked={card.showOnMain !== false} onChange={e => updateCard(card.id,{showOnMain:e.target.checked})}/> 메인에 표시</label>}
       {renderContent(card, detail)}
     </CardShell>;
 
@@ -270,6 +308,7 @@ export default function App() {
   };
 
   const selectedCard = state.cards.find(card => card.id === selected);
+  useEffect(() => {if(selectedMemoId && selectedCard?.type === 'memoBundle'){window.dispatchEvent(new CustomEvent('dashboard:open-note',{detail:selectedMemoId}));setSelectedMemoId(null);}},[selectedMemoId,selectedCard]);
 
   if (loadError) return <main className="app-shell" role="alert" style={{ padding: 32 }}>
     <h1>대시보드 데이터를 불러올 수 없습니다</h1>
@@ -289,52 +328,59 @@ export default function App() {
 
     <nav className="tabs" aria-label="대시보드 탭">
       <button className={selected === 'main' ? 'active' : ''} onClick={() => setSelected('main')}>메인</button>
-      {state.cards.map(card => <button key={card.id} className={selected === card.id ? 'active' : ''} onClick={() => setSelected(card.id)}>{card.favorite && '★ '}{card.title || '제목 없음'}</button>)}
+      {orderedTabs.map(card => <button key={card.id} className={selected === card.id ? 'active' : ''} onClick={() => setSelected(card.id)}>{card.favorite && '★ '}{card.title || '제목 없음'}</button>)}
     </nav>
 
     <main className="workspace" ref={gridRef}>
       {width === null ? null : selected === 'main' ? (
-        mobile ? <div className="mobile-card-stack">{state.cards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button></div>
+        mobile ? <div className="mobile-card-stack">{visibleCards.map(card => shell(card))}<button className="add-card-tile" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong></button></div>
         : <GridLayout key={layoutRevision} className="layout" layout={layouts} cols={GRID_COLS} rowHeight={42} width={width} margin={[16, 16]} containerPadding={[0, 0]} draggableHandle=".drag-handle" draggableCancel="textarea, input, button:not(.drag-handle), select, [contenteditable='true']" preventCollision={false} allowOverlap compactType={null}
             onDragStop={(layout, _oldItem, newItem) => applyDragStop(layout, newItem.i, newItem)}
             onResizeStop={(layout) => applyResizeStop(layout)}>
-            {state.cards.map(card => <div key={card.id}>{shell(card)}</div>)}
+            {visibleCards.map(card => <div key={card.id}>{shell(card)}</div>)}
             <div key={ADD_ID} className="add-card-tile">
               <button className="add-card-drag-handle drag-handle" type="button" aria-label="카드 추가 타일 이동" title="잡고 이동"><GripVertical size={17}/></button>
-              <button className="add-card-action" type="button" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong><span>필요한 카드를 더하세요</span></button>
+              <button className="add-card-action" type="button" onClick={() => setAddOpen(true)}><Plus size={24}/><strong>카드 추가</strong></button>
             </div>
           </GridLayout>
       ) : selectedCard ? <div className="detail-wrapper">{shell(selectedCard, true)}</div> : null}
     </main>
 
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
-    <SettingsModal open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
+    <SettingsModal onTrash={() => {setSettingsOpen(false);setTrashOpen(true);}} onTabOrder={() => {setSettingsOpen(false);setTabOrderOpen(true);}} open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
       onToggleAuto={autoCompact => setState(prev => {
         if (autoCompact) {
-          const result = resolveCompact(prev.cards);
+          const result = resolveCompact(mainCards(prev.cards));
           return {
             ...prev,
-            cards: result.cards,
+            cards: mergeMainCards(prev.cards,result.cards),
             settings: { ...prev.settings, autoCompact, addTileLayout: result.addTileLayout }
           };
         }
 
-        const cards = repairOverlaps(prev.cards);
+        const cards=repairMainCards(prev.cards);
         return {
           ...prev,
           cards,
           settings: {
             ...prev.settings,
             autoCompact,
-            addTileLayout: safeAddTilePosition(cards, prev.settings.addTileLayout)
+            addTileLayout: safeAddTilePosition(mainCards(cards), prev.settings.addTileLayout)
           }
         };
       })}
       onCompact={() => setState(prev => {
-        const result = resolveCompact(prev.cards);
-        return { ...prev, cards: result.cards, settings: { ...prev.settings, addTileLayout: result.addTileLayout } };
+        const result = resolveCompact(mainCards(prev.cards));
+        return { ...prev, cards: mergeMainCards(prev.cards,result.cards), settings: { ...prev.settings, addTileLayout: result.addTileLayout } };
       })}
-      onExport={() => exportBackup(state)} onImport={doImport} />
+      onExport={() => {void exportBackup(state).catch(error=>setConfirm({title:'백업 실패',message:String(error),notice:true,action:()=>undefined}));}}
+      onImport={() => {
+        if(window.dashboardDesktop){
+          void window.dashboardDesktop.restoreBackup().catch(error=>setConfirm({title:'복원 실패',message:String(error),notice:true,action:()=>undefined}));
+        }else{void doImport();}
+      }} />
+    <TrashModal open={trashOpen} groups={state.cards.filter(c=>c.type==='memoBundle').map(c=>({id:c.id,title:c.title}))} onClose={() => setTrashOpen(false)} />
+    <TabOrderModal open={tabOrderOpen} cards={orderedTabs} onClose={() => setTabOrderOpen(false)} onSave={ids => {setState(prev=>({...prev,tabOrder:ids}));setTabOrderOpen(false);}} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} notice={confirm?.notice} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
   </div>;
 }

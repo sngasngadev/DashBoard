@@ -28,7 +28,7 @@ textarea { resize: none; }
 .save-status.error { color: #b42318; font-weight: 600; }
 .settings-button { border: 1px solid var(--border); background: white; border-radius: 10px; padding: 9px 13px; display: flex; align-items: center; gap: 7px; color: #344054; box-shadow: 0 1px 2px rgba(16,24,40,.03); }
 .settings-button:hover { border-color: #cbd5e1; }
-.tabs { display: flex; gap: 5px; overflow-x: auto; padding: 0 30px 10px; border-bottom: 1px solid #e3e7ed; position: sticky; top: 92px; z-index: 19; background: rgba(242,244,247,.96); backdrop-filter: blur(12px); }
+.tabs { display: flex; gap: 5px; flex-wrap: wrap; overflow-x: visible; padding: 0 30px 10px; border-bottom: 1px solid #e3e7ed; position: sticky; top: 92px; z-index: 19; background: rgba(242,244,247,.96); backdrop-filter: blur(12px); }
 .tabs button { border: 0; background: transparent; color: #667085; padding: 9px 13px; border-radius: 8px; white-space: nowrap; }
 .tabs button:hover { background: #e9edf3; color: #344054; }
 .tabs button.active { background: white; color: var(--blue); font-weight: 700; box-shadow: 0 1px 3px rgba(16,24,40,.08); }
@@ -267,3 +267,109 @@ textarea { resize: none; }
   .schedule-add { grid-template-columns:1fr; }
   .schedule-add .button { width:100%; }
 }
+
+.main-visibility {display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;font-size:12px;color:#667085}
+.tab-order-row {display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #e3e7ed;border-radius:8px;margin-bottom:8px;background:white}
+.tab-order-row[draggable=true] {cursor:grab}
+.tab-order-row span {flex:1}
+
+
+/* Memo bundle: header and notes are independent of the dashboard grid. */
+.bundle-preview {display:flex;flex-direction:column;gap:5px;height:100%;min-height:0;overflow-y:auto}
+.bundle-preview button {border:0;background:none;padding:7px 9px;text-align:left;border-radius:6px;color:#344054;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.bundle-preview button:hover {background:#eef3ff}
+.bundle-container {display:grid;grid-template-columns:minmax(220px,270px) minmax(0,1fr);gap:0;min-height:480px;height:calc(100vh - 280px);border:1px solid #e4e7ec;border-radius:10px;overflow:hidden}
+.bundle-sidebar {display:flex;flex-direction:column;gap:9px;padding:13px;background:#f9fafb;border-right:1px solid #eaecf0;min-height:0}
+.bundle-search {display:flex;align-items:center;gap:6px;border:1px solid #d0d5dd;border-radius:7px;background:white;padding:7px}
+.bundle-search input {min-width:0;flex:1;border:0;outline:0}
+.bundle-sidebar select {padding:7px;border:1px solid #d0d5dd;border-radius:6px;background:white}
+.bundle-list {min-height:0;overflow-y:auto;flex:1}
+.bundle-list-item {display:flex;align-items:center;gap:3px;border-radius:6px}
+.bundle-list-item.active {background:#e4efff}
+.bundle-list-item:hover {background:#f0f3fa}
+.bundle-grip {cursor:grab;display:flex;align-items:center;padding:6px;color:#98a2b3}
+.bundle-list-select {min-width:0;flex:1;border:0;background:transparent;display:flex;flex-direction:column;text-align:left;gap:3px;padding:9px 4px;cursor:pointer}
+.bundle-list-select strong {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#344054}
+.bundle-list-select small {font-size:11px;color:#667085;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bundle-document {min-height:0;overflow-y:auto;padding:18px 24px;display:flex;flex-direction:column}
+.bundle-doc-header {display:flex;gap:12px;align-items:center;margin-bottom:15px}
+.bundle-doc-header input {font-size:21px;font-weight:600;border:0;border-bottom:1px solid #e4e7ec;outline:0;flex:1;min-width:0;padding:6px}
+.bundle-doc-header span {white-space:nowrap;color:#667085;font-size:11px}
+.bundle-editor-toolbar {display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid #eaecf0;padding-bottom:10px}
+.bundle-editor-toolbar button {border:1px solid #eaecf0;border-radius:6px;background:white;padding:5px 9px;cursor:pointer}
+.bundle-editor {flex:1;min-height:240px;padding:14px 0;outline:0;line-height:1.6;overflow-wrap:anywhere}
+.bundle-editor img {max-width:100%;height:auto}
+.bundle-editor table {border-collapse:collapse}
+.bundle-editor td,.bundle-editor th {border:1px solid #98a2b3;padding:5px;min-width:55px}
+.bundle-empty {color:#98a2b3;padding:16px}
+.bundle-error {color:#b42318;font-size:12px}
+.trash-modal {max-width:760px;width:min(760px,95vw)}
+.trash-select-all {display:flex;align-items:center;gap:8px;padding:10px 0}
+.trash-select-all small {margin-left:auto;color:#667085}
+.trash-list {max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
+.trash-item {display:flex;gap:12px;padding:11px;border:1px solid #eaecf0;border-radius:8px;cursor:pointer}
+.trash-item>span {min-width:0;display:flex;flex-direction:column;gap:4px}
+.trash-item strong {font-size:13px}
+.trash-item small {font-size:11px;color:#667085}
+.trash-preview {font-size:12px;color:#475467;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+@media(max-width:700px) {.bundle-container {grid-template-columns:1fr;grid-template-rows:220px 1fr;height:auto}.bundle-sidebar{border-right:0;border-bottom:1px solid #eaecf0}.bundle-document{min-height:440px;padding:12px}}
+
+.advanced-editor {display:flex;flex-direction:column;min-height:0;flex:1}
+.advanced-toolbar {display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:10px 0;border-bottom:1px solid #eaecf0}
+.advanced-toolbar button {border:1px solid #d0d5dd;background:white;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px}
+.advanced-toolbar button:hover {background:#eef4ff}
+.advanced-toolbar select {border:1px solid #d0d5dd;border-radius:6px;padding:5px;font-size:12px}
+.advanced-toolbar label {display:flex;align-items:center;gap:4px;font-size:11px;color:#667085}
+.advanced-toolbar input[type=color] {width:26px;height:26px;padding:0;border:1px solid #d0d5dd;background:transparent}
+.advanced-content {flex:1;min-height:0;overflow-y:auto}
+.advanced-content .tiptap {min-height:280px;padding:14px 0;outline:none;line-height:1.65;overflow-wrap:anywhere}
+.advanced-content .tiptap img {max-width:100%;height:auto}
+.advanced-content .tiptap table {border-collapse:collapse;table-layout:fixed;width:100%;margin:14px 0}
+.advanced-content .tiptap td,.advanced-content .tiptap th {border:1px solid #98a2b3;min-width:70px;padding:7px;vertical-align:top;position:relative}
+.advanced-content .tiptap .selectedCell {background:#e6f0ff}
+.advanced-content .tiptap .column-resize-handle {background:#2a6ee7;width:3px;position:absolute;top:0;bottom:0;right:-2px}
+.advanced-content .tiptap p {margin:0 0 9px}
+.advanced-content .tiptap ul,.advanced-content .tiptap ol {padding-left:26px}
+.bundle-rich-editor {width:100%;height:100%}
+
+.add-main-choice{display:flex;align-items:center;gap:8px;margin:8px 0 16px;color:#475467;font-size:13px}.tab-order-grip{display:flex;align-items:center;cursor:grab;color:#98a2b3}
+
+
+/* Compact document previews on the Main dashboard. */
+.bundle-preview button {display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:9px 10px;border-bottom:1px solid #eef0f3;white-space:normal;min-height:48px}
+.bundle-preview button strong {font-size:13px;font-weight:600;color:#344054;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bundle-preview button small {font-size:11px;line-height:1.35;color:#8a94a5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Shared blue insertion indicator for memo rows and tab reorder modal. */
+.bundle-list-item,.tab-order-row {position:relative}
+.bundle-list-item.drop-before::before,.bundle-list-item.drop-after::after,
+.tab-order-row.drop-before::before,.tab-order-row.drop-after::after {
+ content:'';position:absolute;left:2px;right:2px;height:3px;border-radius:2px;background:#2374ef;z-index:5;pointer-events:none;box-shadow:0 0 0 1px #fff
+}
+.bundle-list-item.drop-before::before,.tab-order-row.drop-before::before {top:-2px}
+.bundle-list-item.drop-after::after,.tab-order-row.drop-after::after {bottom:-2px}
+.bundle-list-item.dragging,.tab-order-row.dragging {opacity:.45}
+
+/* Compact icon-first rich editor toolbar. */
+.advanced-toolbar {column-gap:9px;row-gap:7px}
+.editor-tool-group {display:flex;align-items:center;gap:2px;border-right:1px solid #e0e5ed;padding-right:8px}
+.advanced-toolbar .editor-icon-button {display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid transparent;color:#475467}
+.advanced-toolbar .editor-icon-button:hover {background:#eef4ff;border-color:#bfdbfe;color:#175cd3}
+.advanced-toolbar .editor-icon-button.is-active {background:#dceaff;border-color:#9ac3ff;color:#175cd3}
+.editor-color-picker {display:inline-flex;align-items:center;gap:3px;padding:0 4px;cursor:pointer}
+.editor-color-picker input[type=color] {width:20px;height:25px;cursor:pointer}
+
+/* Compact one-line cards and input controls */
+.bundle-preview button {display:flex;flex-direction:row;align-items:center;gap:7px;min-height:32px;padding:6px 9px;white-space:nowrap}
+.bundle-preview button strong {flex:0 1 auto;max-width:45%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bundle-preview button .bundle-preview-separator {flex:none;color:#cbd5e1;font-size:12px}
+.bundle-preview button small {flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.todo-add textarea {min-height:0;height:37px;line-height:1.35;overflow-y:auto}
+.postit .postit-delete {position:absolute;top:4px;right:4px;z-index:3}
+.postit .postit-delete:hover {background:rgba(255,255,255,.65)}
+
+/* Keep palette control clear of bottom-right resize handle. */
+.postit-footer {justify-content:flex-start;padding-left:4px}
+
+/* With color chooser on the left, expand palette inward (not outside sticky note). */
+.postit .color-palette {left:22px;right:auto;bottom:0}

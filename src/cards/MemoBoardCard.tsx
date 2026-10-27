@@ -133,6 +133,8 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
             }}
           ><GripVertical size={14}/></button>
 
+          <button className="icon-button subtle postit-delete" aria-label="포스트잇 삭제" onClick={() => onAskDelete(note)}><Trash2 size={14}/></button>
+
           <textarea value={note.text} onChange={e => patch(note.id, { text: e.target.value })} />
 
           <div className="postit-footer">
@@ -155,7 +157,7 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
                   />)}
                 </div>}
               </div>
-              <button className="icon-button subtle" aria-label="포스트잇 삭제" onClick={() => onAskDelete(note)}><Trash2 size={14}/></button>
+
             </div>
           </div>
 
@@ -193,6 +195,6 @@ export function MemoBoardCard({ data, onChange, onAskDelete, detail = false }: {
         </div>;
       })}
     </div>
-    <button className="add-postit" onClick={add}><Plus size={18}/> 포스트잇</button>
+    <button className="add-postit" onClick={add} aria-label="포스트잇 추가" title="포스트잇 추가"><Plus size={19}/></button>
   </div>;
 }

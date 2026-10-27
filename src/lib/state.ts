@@ -1,5 +1,6 @@
 import type { BoardNote, CardLayout, CardRecord, CardType, DashboardState, MemoBoardData, MemoData, ScheduleData, ScheduleItem, TodoData, TodoItem } from '../types/dashboard';
 import { makeId } from './id';
+import { mainCards, repairMainCards } from './visibility';
 import { ADD_TILE_HEIGHT, ADD_TILE_WIDTH, GRID_COLS, nextCardPosition, repairOverlaps, safeAddTilePosition } from './layout';
 import { clampPostitHeight, clampPostitWidth, POSTIT_COLORS } from './postit';
 import { isDateValue } from './schedule';
@@ -10,13 +11,15 @@ const defaults: Record<CardType, { title: string; w: number; h: number }> = {
   todo: { title: '할 일', w: 4, h: 7 },
   schedule: { title: '일정', w: 5, h: 7 },
   memo: { title: '자유메모', w: 4, h: 7 },
-  memoBoard: { title: '메모보드', w: 5, h: 8 }
+  memoBoard: { title: '메모보드', w: 5, h: 8 },
+  memoBundle: { title: '메모묶음', w: 4, h: 7 }
 };
 
-function initialData(type: CardType): TodoData | ScheduleData | MemoData | MemoBoardData {
+function initialData(type: CardType): TodoData | ScheduleData | MemoData | MemoBoardData | Record<string, unknown> {
   if (type === 'todo') return { items: [], completedCollapsed: false, draft: '' };
   if (type === 'schedule') return { items: [], completedCollapsed: true, draftDate: '', draftText: '' };
   if (type === 'memo') return { html: '' };
+  if (type === 'memoBundle') return {};
   return { notes: [] };
 }
 
@@ -28,6 +31,7 @@ export function createCard(type: CardType, cards: CardRecord[]): CardRecord {
     type,
     title: def.title,
     favorite: false,
+    showOnMain: true,
     layout: nextCardPosition(cards, def.w, def.h),
     data: initialData(type),
     createdAt: timestamp,
@@ -42,7 +46,8 @@ export function createInitialState(): DashboardState {
     version: 1,
     meta: { title: '나의 대시보드', description: '필요한 정보와 할 일을 한 화면에서 관리하세요.' },
     settings: { autoCompact: true, addTileLayout: nextCardPosition([first, second], ADD_TILE_WIDTH, ADD_TILE_HEIGHT) },
-    cards: [first, second]
+    cards: [first, second],
+    tabOrder: [first.id, second.id]
   };
 }
 
@@ -147,6 +152,7 @@ function normalizeCard(value: unknown): CardRecord | null {
     type,
     title: str(value.title, '제목 없음'),
     favorite: Boolean(value.favorite),
+    showOnMain: value.showOnMain !== false,
     layout: normalizeLayout(value.layout),
     data,
     createdAt: str(value.createdAt, now()),
@@ -166,13 +172,13 @@ export function normalizeState(raw: unknown): DashboardState {
     return [card];
   });
 
-  const cards = repairOverlaps(normalizedCards);
+  const cards = repairMainCards(normalizedCards);
   const meta = isObject(raw.meta) ? raw.meta : {};
   const settings = isObject(raw.settings) ? raw.settings : {};
   const rawAddTile = isObject(settings.addTileLayout)
     ? normalizeLayout(settings.addTileLayout)
-    : nextCardPosition(cards, ADD_TILE_WIDTH, ADD_TILE_HEIGHT);
-  const addTileLayout = safeAddTilePosition(cards, rawAddTile);
+    : nextCardPosition(mainCards(cards), ADD_TILE_WIDTH, ADD_TILE_HEIGHT);
+  const addTileLayout = safeAddTilePosition(mainCards(cards), rawAddTile);
 
   return {
     version: 1,
@@ -184,6 +190,7 @@ export function normalizeState(raw: unknown): DashboardState {
       autoCompact: settings.autoCompact === undefined ? true : Boolean(settings.autoCompact),
       addTileLayout
     },
-    cards
+    cards,
+    tabOrder: [...(Array.isArray(raw.tabOrder) ? raw.tabOrder.filter((id): id is string => typeof id === 'string' && cards.some(card => card.id === id)) : []), ...cards.map(card => card.id)].filter((id, index, arr) => arr.indexOf(id) === index)
   };
 }
