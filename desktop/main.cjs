@@ -10,7 +10,14 @@ diagnose('Starting DashBoard, pid='+process.pid+', platform='+process.platform);
 process.on('uncaughtException',error=>diagnose('uncaughtException',error?.stack||error));
 process.on('unhandledRejection',error=>diagnose('unhandledRejection',error?.stack||error));
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, crashReporter } = require('electron');
+const minimalMode=process.argv.includes('--dashboard-minimal');
+diagnose('Diagnostic mode',minimalMode?'minimal':'normal');
+try {
+  crashReporter.start({submitURL:'',uploadToServer:false,compress:false});
+  diagnose('Crash reporter started',app.getPath('crashDumps'));
+} catch(error) {diagnose('Crash reporter initialization failed',error?.stack||error);}
+
 const { openDashboardDatabase } = require('./database.cjs');
 const { restoreDatabase } = require('./restore.cjs');
 
@@ -60,6 +67,18 @@ function registerHandlers() {
 app.on('child-process-gone',(_event,details)=>diagnose('child-process-gone',JSON.stringify(details)));
 app.whenReady().then(()=>{
   diagnose('Electron ready, root=',root);
+  if(minimalMode) {
+    diagnose('Creating minimal BrowserWindow');
+    window=new BrowserWindow({width:650,height:350,webPreferences:{sandbox:false,nodeIntegration:false,contextIsolation:true}});
+    diagnose('Minimal BrowserWindow created');
+    window.webContents.on('render-process-gone',(_event,details)=>diagnose('minimal render-process-gone',JSON.stringify(details)));
+    window.webContents.on('did-fail-load',(_event,code,description)=>diagnose('minimal did-fail-load',code+' '+description));
+    window.webContents.on('did-finish-load',()=>diagnose('Minimal renderer loaded'));
+    diagnose('Before minimal loadURL');
+    window.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent('<!doctype html><html lang="ko"><meta charset="utf-8"><title>DashBoard 진단</title><body style="font:18px sans-serif;padding:30px"><h2>DashBoard 최소 창 테스트 성공</h2><p>이 창이 유지되면 Electron 기본 창 실행은 가능합니다.</p></body></html>')).then(()=>diagnose('Minimal loadURL resolved')).catch(e=>diagnose('Minimal loadURL failed',e?.stack||e));
+    diagnose('After minimal loadURL');
+    return;
+  }
   try {
     diagnose('Opening SQLite database');
     storage = openDashboardDatabase(root);
@@ -85,7 +104,9 @@ app.whenReady().then(()=>{
   window.on('unresponsive',()=>diagnose('BrowserWindow unresponsive'));
   window.on('closed',()=>diagnose('BrowserWindow closed'));
   window.webContents.on('did-finish-load',()=>diagnose('Renderer loaded'));
-  window.loadFile(path.join(__dirname,'renderer','index.html')).catch(error=>diagnose('loadFile rejected',error?.stack||error));
+  diagnose('Before renderer loadFile');
+  window.loadFile(path.join(__dirname,'renderer','index.html')).then(()=>diagnose('Renderer loadFile resolved')).catch(error=>diagnose('loadFile rejected',error?.stack||error));
+  diagnose('After renderer loadFile');
   window.webContents.setWindowOpenHandler(() => ({ action:'deny' }));
 });
 app.on('window-all-closed',()=>app.quit());
