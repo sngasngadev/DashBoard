@@ -1,5 +1,15 @@
 'use strict';
 const path = require('node:path');
+const fs = require('node:fs');
+const os = require('node:os');
+const diagnosticFile=path.join(os.tmpdir(),'DashBoard-diagnostic.log');
+function diagnose(message,detail=''){
+  try{fs.appendFileSync(diagnosticFile,new Date().toISOString()+' '+message+' '+String(detail)+'\n');}catch{}
+}
+diagnose('Starting DashBoard, pid='+process.pid+', platform='+process.platform);
+process.on('uncaughtException',error=>diagnose('uncaughtException',error?.stack||error));
+process.on('unhandledRejection',error=>diagnose('unhandledRejection',error?.stack||error));
+
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { openDashboardDatabase } = require('./database.cjs');
 const { restoreDatabase } = require('./restore.cjs');
@@ -47,9 +57,13 @@ function registerHandlers() {
   for (const [channel, handler] of Object.entries(handlers)) ipcMain.handle(channel,handler);
 }
 
+app.on('child-process-gone',(_event,details)=>diagnose('child-process-gone',JSON.stringify(details)));
 app.whenReady().then(()=>{
+  diagnose('Electron ready, root=',root);
   try {
+    diagnose('Opening SQLite database');
     storage = openDashboardDatabase(root);
+    diagnose('SQLite ready');
   } catch (err) {
     const { dialog } = require('electron');
     dialog.showErrorBox('대시보드 데이터 오류',String(err.message||err));
@@ -57,14 +71,22 @@ app.whenReady().then(()=>{
     return;
   }
   registerHandlers();
+  diagnose('IPC handlers ready');
   void storage.backupIfDue().catch(error=>console.error('Automatic backup failed:',error));
   setInterval(()=>{if(storage)void storage.backupIfDue().catch(error=>console.error('Automatic backup failed:',error));},60*60*1000);
   window = new BrowserWindow({
     width:1280,height:850,minWidth:800,minHeight:600,
     webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:false}
   });
-  window.loadFile(path.join(__dirname,'renderer','index.html'));
+  diagnose('BrowserWindow created');
+  window.webContents.on('render-process-gone',(_event,details)=>diagnose('render-process-gone',JSON.stringify(details)));
+  window.webContents.on('did-fail-load',(_event,code,description,url)=>diagnose('did-fail-load',JSON.stringify({code,description,url})));
+  window.webContents.on('console-message',(_event,details)=>{if(details.level==='error')diagnose('renderer console error',details.message);});
+  window.on('unresponsive',()=>diagnose('BrowserWindow unresponsive'));
+  window.on('closed',()=>diagnose('BrowserWindow closed'));
+  window.webContents.on('did-finish-load',()=>diagnose('Renderer loaded'));
+  window.loadFile(path.join(__dirname,'renderer','index.html')).catch(error=>diagnose('loadFile rejected',error?.stack||error));
   window.webContents.setWindowOpenHandler(() => ({ action:'deny' }));
 });
 app.on('window-all-closed',()=>app.quit());
-app.on('before-quit',()=>{ if(storage){storage.close();storage=null;} });
+app.on('before-quit',()=>{ diagnose('App before-quit'); if(storage){storage.close();storage=null;} });
