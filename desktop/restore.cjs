@@ -11,7 +11,7 @@ function validateBackup(file) {
     const integrity=db.pragma('quick_check',{simple:true});
     if(integrity!=='ok')throw new Error('백업 파일의 무결성 검사에 실패했습니다.');
     const version=db.pragma('user_version',{simple:true});
-    if(version<1||version>2)throw new Error('호환되지 않는 백업 버전입니다.');
+    if(version<1||version>3)throw new Error('호환되지 않는 백업 버전입니다.');
     const table=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='dashboard_state'").get();
     if(!table)throw new Error('대시보드 데이터베이스가 아닙니다.');
     const row=db.prepare('SELECT payload FROM dashboard_state WHERE id=1').get();
