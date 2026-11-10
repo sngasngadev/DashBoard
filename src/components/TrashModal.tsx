@@ -3,8 +3,8 @@ import { X } from 'lucide-react';
 
 type Deleted={id:string;title:string;originalCardId:string;originalCardTitle:string;preview:string;deletedAt:string};
 type Group={id:string;title:string};
-export function TrashModal({open,groups,onClose}:{
-  open:boolean; groups:Group[]; onClose:()=>void;
+export function TrashModal({open,groups,onClose,onCreateBundle}:{
+  open:boolean; groups:Group[]; onClose:()=>void; onCreateBundle:(title:string)=>Promise<string>;
 }) {
   const [items,setItems]=useState<Deleted[]>([]);
   const [checked,setChecked]=useState<string[]>([]);
@@ -25,11 +25,14 @@ export function TrashModal({open,groups,onClose}:{
       const original=groups.find(x=>x.id===item.originalCardId);
       let cardId=original?.id;
       if(!cardId){
-        if(!groups.length){setError('복원할 메모묶음이 없습니다. 먼저 메모묶음을 추가하세요.');return;}
-        const suggestion=groups.map((g,i)=>String(i+1)+': '+g.title).join('\n');
-        const choice=window.prompt('원래 메모묶음이 없습니다. 복원할 묶음 번호를 입력하세요.\n'+suggestion);
+        const suggestion=groups.map((g,i)=>String(i+1)+': '+g.title).join('\\n');
+        const choice=window.prompt('원래 메모묶음이 없습니다. 복원할 위치를 선택하세요.\\n'+suggestion+'\\n0: 새 메모묶음 만들기',groups.length?'1':'0');
         if(choice===null)return;
-        cardId=groups[Number(choice)-1]?.id;
+        if(choice.trim()==='0'){
+          const title=window.prompt('새 메모묶음 이름을 입력하세요.','복원한 메모');
+          if(title===null)return;
+          try{cardId=await onCreateBundle(title);}catch(e){setError(String(e));return;}
+        }else cardId=groups[Number(choice)-1]?.id;
         if(!cardId){setError('올바른 메모묶음 번호를 입력하세요.');return;}
       }
       assignments.push({id,cardId});
