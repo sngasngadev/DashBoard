@@ -102,7 +102,7 @@ function openDashboardDatabase(root) {
         .run(JSON.stringify(state),new Date().toISOString());
       db.prepare('DELETE FROM card_attachments').run();
       const insert=db.prepare('INSERT INTO card_attachments(card_id,attachment_id) VALUES(?,?)');
-      for(const card of state.cards){
+      for(const card of [...state.cards,...(Array.isArray(state.archivedCards)?state.archivedCards:[])]){
         if(card.type!=='memo'||typeof card.data?.html!=='string')continue;
         const refs=[...new Set([...card.data.html.matchAll(/data-attachment-id="([^"]+)"/g)].map(match=>match[1]))];
         for(const id of refs)insert.run(card.id,id);
