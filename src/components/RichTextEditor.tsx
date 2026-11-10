@@ -6,6 +6,7 @@ import { TableKit } from '@tiptap/extension-table';
 import Image from '@tiptap/extension-image';
 import { TextStyleKit } from '@tiptap/extension-text-style';
 import TextAlign from '@tiptap/extension-text-align';
+import { isSpreadsheetHtml, tabularTextToHtml } from '../lib/clipboardTable';
 
 type Props={html:string;onChange:(html:string)=>void;onBlur?:()=>void;onImage?:(file:File)=>Promise<{src:string;attachmentId?:string}>;resolveImage?:(id:string)=>Promise<string>;serialize?:(html:string)=>string;className?:string};
 const AttachmentImage=Image.extend({
@@ -29,6 +30,7 @@ export function RichTextEditor({html,onChange,onBlur,onImage,resolveImage,serial
   serializer.current=serialize;
   const resolved=useRef(new Set<string>());
   const urls=useRef<string[]>([]);
+  const editorRef=useRef<ReturnType<typeof useEditor>>(null);
   const editor=useEditor({
     extensions, content:html||'<p></p>',
     onUpdate:({editor})=>{
@@ -40,7 +42,21 @@ export function RichTextEditor({html,onChange,onBlur,onImage,resolveImage,serial
     onBlur:()=>blur.current?.(),
     editorProps:{
       handlePaste(view,event){
-        const item=[...(event.clipboardData?.items||[])].find(item=>item.kind==='file'&&item.type.startsWith('image/'));
+        const clipboard=event.clipboardData;
+        if(!clipboard)return false;
+        // Excel includes a bitmap preview alongside the actual HTML cells.
+        // Let ProseMirror parse the HTML table before considering image data.
+        if(isSpreadsheetHtml(clipboard.getData('text/html')))return false;
+        const table=tabularTextToHtml(clipboard.getData('text/plain'));
+        if(table){
+          event.preventDefault();
+          view.focus();
+          const {from,to}=view.state.selection;
+          // TableKit parses the generated table into editable cell nodes.
+          editorRef.current?.chain().focus().insertContentAt({from,to},table).run();
+          return true;
+        }
+        const item=[...clipboard.items].find(item=>item.kind==='file'&&item.type.startsWith('image/'));
         const file=item?.getAsFile();
         if(!file||!image.current)return false;
         event.preventDefault();
