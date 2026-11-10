@@ -76,5 +76,6 @@ export interface DashboardState {
     addTileLayout: CardLayout;
   };
   cards: CardRecord[];
+  archivedCards?: (CardRecord & {archivedAt?:string})[];
   tabOrder?: string[];
 }
