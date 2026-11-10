@@ -13,6 +13,9 @@ declare global {
       saveNote(note: unknown): Promise<boolean>;
       searchNotes(cardId: string, query: string, field: string): Promise<unknown[]>;
       trashNote(id: string, title: string): Promise<boolean>;
+      archiveNote(id: string, title: string): Promise<boolean>;
+      listArchive(): Promise<unknown[]>;
+      restoreArchive(items:{id:string;cardId:string}[]): Promise<number>;
       listTrash(): Promise<unknown[]>;
       trashCardNotes(cardId:string,title:string): Promise<number>;
       restoreNotes(items: {id: string; cardId?: string}[]): Promise<number>;
