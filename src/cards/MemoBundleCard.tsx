@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GripVertical, Plus, Search, Trash2 } from 'lucide-react';
+import { Archive, GripVertical, Plus, Search, Trash2 } from 'lucide-react';
 import { makeId } from '../lib/id';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { serializeRichHtml } from '../lib/richHtml';
@@ -125,6 +125,16 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
     }catch(e){setError(String(e));}
   };
 
+  const archive=async(id:string)=>{
+    if(!api()||!window.confirm('이 메모를 보관함으로 이동할까요?'))return;
+    try{
+      if(note?.id===id&&dirty.current)await persist(note);
+      await api()!.archiveNote(id,cardTitle);
+      if(active===id){setActive(null);setNote(null);}
+      await refresh();
+    }catch(e){setError(String(e));}
+  };
+
   const reorder=async(from:string,to:string,after:boolean)=>{
     if(!api()||term||from===to)return;
     const copy=[...items],src=copy.findIndex(item=>item.id===from),dest=copy.findIndex(item=>item.id===to);
@@ -177,6 +187,7 @@ export function MemoBundleCard({cardId,cardTitle,detail,onOpen}:{
         <button className="bundle-list-select" onClick={()=>select(item.id)}>
           <strong>{item.title||'제목 없음'}</strong>{term&&<small>{highlightedExcerpt(item.preview||'',term.trim())}</small>}
         </button>
+        <button className="icon-button subtle" title="메모 보관" aria-label="메모 보관" onClick={()=>void archive(item.id)}><Archive size={14}/></button>
         <button className="icon-button subtle" aria-label="메모 삭제" onClick={()=>void trash(item.id)}><Trash2 size={14}/></button>
       </div>)}</div>
     </aside>
