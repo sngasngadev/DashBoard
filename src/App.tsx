@@ -20,6 +20,8 @@ import { TabOrderModal } from './components/TabOrderModal';
 import { MemoBundleCard } from './cards/MemoBundleCard';
 import { mainCards, mergeMainCards, repairMainCards, setCardMainVisibility } from './lib/visibility';
 import { TrashModal } from './components/TrashModal';
+import { ArchiveModal } from './components/ArchiveModal';
+import { nearestFreePosition } from './lib/layout';
 
 const ADD_ID = '__add_card__';
 
@@ -47,6 +49,7 @@ export default function App() {
   const [addOpen, setAddOpen] = useState(false);
   const [tabOrderOpen, setTabOrderOpen] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [layoutRevision, setLayoutRevision] = useState(0);
@@ -144,6 +147,52 @@ export default function App() {
         }
       };
     }); })(); } });
+  };
+
+  const archiveCard=(card:CardRecord)=>{
+    if(card.type==='memoBundle')return;
+    if(!window.confirm('“'+card.title+'” 카드를 보관함으로 이동할까요?'))return;
+    setState(prev=>{
+      const remaining=prev.cards.filter(c=>c.id!==card.id);
+      const arranged=prev.settings.autoCompact?resolveCompact(mainCards(remaining)):null;
+      const cards=arranged?mergeMainCards(remaining,arranged.cards):remaining;
+      return {...prev,cards,archivedCards:[...(prev.archivedCards||[]),{...card,archivedAt:new Date().toISOString()}],
+        tabOrder:prev.tabOrder?.filter(id=>id!==card.id),
+        settings:{...prev.settings,addTileLayout:arranged?.addTileLayout||safeAddTilePosition(mainCards(cards),prev.settings.addTileLayout)}
+      };
+    });
+    if(selected===card.id)setSelected('main');
+  };
+
+  const restoreArchivedCard=(id:string)=>{
+    setState(prev=>{
+      const target=prev.archivedCards?.find(card=>card.id===id);
+      if(!target)return prev;
+      const layout=target.showOnMain===false?target.layout:nearestFreePosition(mainCards(prev.cards).map(card=>card.layout),target.layout);
+      const {archivedAt:_archivedAt,...restored}=target;
+      const cards=[...prev.cards,{...restored,layout}];
+      return {...prev,cards,archivedCards:prev.archivedCards?.filter(card=>card.id!==id),
+        tabOrder:[...(prev.tabOrder||[]),id],
+        settings:{...prev.settings,addTileLayout:safeAddTilePosition(mainCards(cards),prev.settings.addTileLayout)}
+      };
+    });
+  };
+
+  const restoreArchivedNote=async(id:string,destination:string)=>{
+    if(!window.dashboardDesktop)throw new Error('데스크톱 버전에서만 메모를 복원할 수 있습니다.');
+    let target=destination;
+    if(destination==='__new__'){
+      const title=window.prompt('새 메모묶음 이름을 입력하세요.','복원한 메모');
+      if(!title?.trim())throw new Error('새 메모묶음 이름을 입력하세요.');
+      const card=createCard('memoBundle',mainCards(state.cards));
+      card.title=title.trim();
+      target=card.id;
+      // Ensure the selected destination exists in the saved dashboard.
+      const updated={...state,cards:[...state.cards,card],tabOrder:[...(state.tabOrder||[]),card.id]};
+      await saveState(updated);
+      setState(updated);
+    }
+    await window.dashboardDesktop.restoreArchive([{id,cardId:target}]);
   };
 
   const addCard = (type: CardType,showOnMain=true) => {
@@ -276,6 +325,7 @@ export default function App() {
     onTitle={title => updateCard(card.id, { title })}
     onFavorite={() => updateCard(card.id, { favorite: !card.favorite })}
     onDelete={() => askCardDelete(card)}
+    onArchive={card.type==='memoBundle'?undefined:()=>archiveCard(card)}
     onOpenDetail={() => setSelected(card.id)}>
       {detail && <label className="main-visibility"><input type="checkbox" checked={card.showOnMain !== false} onChange={e => updateCard(card.id,{showOnMain:e.target.checked})}/> 메인에 표시</label>}
       {renderContent(card, detail)}
@@ -347,7 +397,7 @@ export default function App() {
     </main>
 
     <AddCardModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addCard} />
-    <SettingsModal onTrash={() => {setSettingsOpen(false);setTrashOpen(true);}} onTabOrder={() => {setSettingsOpen(false);setTabOrderOpen(true);}} open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
+    <SettingsModal onArchive={() => {setSettingsOpen(false);setArchiveOpen(true);}} onTrash={() => {setSettingsOpen(false);setTrashOpen(true);}} onTabOrder={() => {setSettingsOpen(false);setTabOrderOpen(true);}} open={settingsOpen} autoCompact={state.settings.autoCompact} onClose={() => setSettingsOpen(false)}
       onToggleAuto={autoCompact => setState(prev => {
         if (autoCompact) {
           const result = resolveCompact(mainCards(prev.cards));
@@ -379,6 +429,8 @@ export default function App() {
           void window.dashboardDesktop.restoreBackup().catch(error=>setConfirm({title:'복원 실패',message:String(error),notice:true,action:()=>undefined}));
         }else{void doImport();}
       }} />
+    <ArchiveModal open={archiveOpen} cards={state.archivedCards||[]} groups={state.cards.filter(c=>c.type==='memoBundle').map(c=>({id:c.id,title:c.title}))}
+      onClose={()=>setArchiveOpen(false)} onRestoreCard={restoreArchivedCard} onRestoreNote={restoreArchivedNote}/>
     <TrashModal open={trashOpen} groups={state.cards.filter(c=>c.type==='memoBundle').map(c=>({id:c.id,title:c.title}))} onClose={() => setTrashOpen(false)} />
     <TabOrderModal open={tabOrderOpen} cards={orderedTabs} onClose={() => setTabOrderOpen(false)} onSave={ids => {setState(prev=>({...prev,tabOrder:ids}));setTabOrderOpen(false);}} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} notice={confirm?.notice} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
