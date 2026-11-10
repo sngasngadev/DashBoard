@@ -373,3 +373,15 @@ textarea { resize: none; }
 
 /* With color chooser on the left, expand palette inward (not outside sticky note). */
 .postit .color-palette {left:22px;right:auto;bottom:0}
+
+/* Permanent archive */
+.archive-modal {width:min(900px,96vw);max-width:900px}
+.archive-scroll {overflow-y:auto;max-height:62vh;padding-top:12px}
+.archive-scroll h3 {font-size:13px;color:#475467;margin:14px 0 8px}
+.archive-entry {display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 8px;border-bottom:1px solid #eaecf0}
+.archive-entry>span {display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;overflow-wrap:anywhere}
+.archive-entry strong {font-size:13px}
+.archive-entry small,.archive-muted {font-size:12px;color:#667085}
+.archive-restore-options {display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.archive-restore-options select {min-width:150px;max-width:220px;border:1px solid #d0d5dd;border-radius:6px;padding:7px}
+@media(max-width:650px){.archive-entry{align-items:stretch;flex-direction:column}}
