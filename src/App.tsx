@@ -178,19 +178,26 @@ export default function App() {
     });
   };
 
+  const createRestorationBundle=async(title:string)=>{
+    if(!title.trim())throw new Error('새 메모묶음 이름을 입력하세요.');
+    const prev=latestState.current;
+    const created=createCard('memoBundle',mainCards(prev.cards));
+    created.title=title.trim();
+    const next:DashboardState={...prev,cards:[...prev.cards,created],tabOrder:[...(prev.tabOrder||[]),created.id]};
+    // The destination must be saved before reassigning any archived or trashed notes.
+    await saveState(next);
+    latestState.current=next;
+    setState(next);
+    return created.id;
+  };
+
   const restoreArchivedNote=async(id:string,destination:string)=>{
     if(!window.dashboardDesktop)throw new Error('데스크톱 버전에서만 메모를 복원할 수 있습니다.');
     let target=destination;
     if(destination==='__new__'){
       const title=window.prompt('새 메모묶음 이름을 입력하세요.','복원한 메모');
-      if(!title?.trim())throw new Error('새 메모묶음 이름을 입력하세요.');
-      const card=createCard('memoBundle',mainCards(state.cards));
-      card.title=title.trim();
-      target=card.id;
-      // Ensure the selected destination exists in the saved dashboard.
-      const updated={...state,cards:[...state.cards,card],tabOrder:[...(state.tabOrder||[]),card.id]};
-      await saveState(updated);
-      setState(updated);
+      if(title===null)return;
+      target=await createRestorationBundle(title);
     }
     await window.dashboardDesktop.restoreArchive([{id,cardId:target}]);
   };
@@ -431,7 +438,7 @@ export default function App() {
       }} />
     <ArchiveModal open={archiveOpen} cards={state.archivedCards||[]} groups={state.cards.filter(c=>c.type==='memoBundle').map(c=>({id:c.id,title:c.title}))}
       onClose={()=>setArchiveOpen(false)} onRestoreCard={restoreArchivedCard} onRestoreNote={restoreArchivedNote}/>
-    <TrashModal open={trashOpen} groups={state.cards.filter(c=>c.type==='memoBundle').map(c=>({id:c.id,title:c.title}))} onClose={() => setTrashOpen(false)} />
+    <TrashModal open={trashOpen} groups={state.cards.filter(c=>c.type==='memoBundle').map(c=>({id:c.id,title:c.title}))} onClose={() => setTrashOpen(false)} onCreateBundle={createRestorationBundle} />
     <TabOrderModal open={tabOrderOpen} cards={orderedTabs} onClose={() => setTabOrderOpen(false)} onSave={ids => {setState(prev=>({...prev,tabOrder:ids}));setTabOrderOpen(false);}} />
     <ConfirmDialog open={Boolean(confirm)} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} notice={confirm?.notice} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.action(); setConfirm(null); }} />
   </div>;
