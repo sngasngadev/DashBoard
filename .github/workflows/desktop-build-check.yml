@@ -1,0 +1,21 @@
+name: Desktop Build Check
+on:
+  pull_request:
+  push:
+    branches: [feature/desktop-sqlite-memo-bundle]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --legacy-peer-deps
+      - name: Print npm debug log on install failure
+        if: failure()
+        run: tail -n 160 $HOME/.npm/_logs/*-debug-0.log || true
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

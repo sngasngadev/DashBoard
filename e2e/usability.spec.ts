@@ -28,7 +28,7 @@ test('capture representative desktop and mobile usage states', async ({ page }) 
   await page.getByRole('button', { name: /메모보드/ }).click();
 
   const board = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
-  for (let i = 0; i < 4; i += 1) await board.getByRole('button', { name: '포스트잇', exact: true }).click();
+  for (let i = 0; i < 4; i += 1) await board.getByRole('button', { name: '포스트잇 추가', exact: true }).click();
   const notes = board.locator('.postit');
   await notes.nth(0).locator('textarea').fill('이번 주 핵심 이슈\n고객 요청사항 우선 확인');
   await notes.nth(1).locator('textarea').fill('회의에서 확인할 것');
@@ -48,10 +48,10 @@ test('capture representative desktop and mobile usage states', async ({ page }) 
   await page.screenshot({ path: `${dir}/02-filled-dashboard.png`, fullPage: true });
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const rich = page.locator('.detail-card .rich-editor');
+  const rich = page.locator('.detail-card .advanced-content .tiptap');
   await rich.fill('프로젝트 메모\n\n중요한 내용은 상세 화면에서 정리하고, 메인에서는 빠르게 확인한다.');
   await rich.press('Control+A');
-  await page.getByLabel('굵게').click();
+  await page.getByRole('button', { name: '굵게' }).click();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `${dir}/03-memo-detail.png`, fullPage: true });
 

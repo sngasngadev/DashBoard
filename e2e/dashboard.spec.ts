@@ -32,7 +32,7 @@ test('desktop user can manage the dashboard naturally', async ({ page }) => {
   await expect(page.locator('.tabs').getByRole('button', { name: '메모보드' })).toBeVisible();
 
   const boardCard = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
-  await boardCard.getByRole('button', { name: '포스트잇' }).click();
+  await boardCard.getByRole('button', { name: '포스트잇 추가' }).click();
   await boardCard.locator('.postit textarea').fill('확인할 메모');
   await boardCard.getByRole('button', { name: '포스트잇 색상 변경' }).click();
   await expect(boardCard.locator('.color-palette')).toBeVisible();
@@ -40,11 +40,11 @@ test('desktop user can manage the dashboard naturally', async ({ page }) => {
   await expect(boardCard.locator('.postit')).toHaveClass(/pink/);
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const richEditor = page.locator('.detail-card .rich-editor');
+  const richEditor = page.locator('.detail-card .advanced-content .tiptap');
   await expect(richEditor).toBeVisible();
   await richEditor.fill('상세 메모');
   await richEditor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
-  await page.getByLabel('굵게').click();
+  await page.getByRole('button', { name: '굵게' }).click();
   await expect(richEditor).toHaveJSProperty('innerText', '상세 메모');
 
   await page.getByRole('button', { name: '설정' }).click();
@@ -308,7 +308,7 @@ test('memo-board post-its reorder by drag and always repack without overlap', as
 
   const board = page.locator('.dashboard-card:has(input.card-title[value="메모보드"])');
   for (let i = 0; i < 3; i += 1) {
-    await board.getByRole('button', { name: '포스트잇', exact: true }).click();
+    await board.getByRole('button', { name: '포스트잇 추가', exact: true }).click();
   }
 
   const notes = board.locator('.postit');
@@ -394,7 +394,7 @@ test('free memo preserves Enter line breaks in main and detail views', async ({ 
   await expect(reloadedSimple).toHaveJSProperty('innerText', '첫줄\n둘째줄');
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const rich = page.locator('.detail-card .rich-editor');
+  const rich = page.locator('.detail-card .advanced-content .tiptap');
   await expect(rich).toBeVisible();
   await rich.click();
   await rich.press('End');
@@ -408,7 +408,7 @@ test('free memo preserves Enter line breaks in main and detail views', async ({ 
   await page.waitForTimeout(500);
   await page.reload();
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const richReloaded = page.locator('.detail-card .rich-editor');
+  const richReloaded = page.locator('.detail-card .advanced-content .tiptap');
   await expect(richReloaded).toContainText('셋째줄');
 });
 
@@ -419,10 +419,10 @@ test('rich memo formatting survives a later main-view edit', async ({ page }) =>
   await page.reload();
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const rich = page.locator('.detail-card .rich-editor');
+  const rich = page.locator('.detail-card .advanced-content .tiptap');
   await rich.fill('서식 유지');
   await rich.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
-  await page.getByLabel('굵게').click();
+  await page.getByRole('button', { name: '굵게' }).click();
   await expect(rich.locator('b, strong')).toContainText('서식 유지');
 
   await page.locator('.tabs').getByRole('button', { name: '메인' }).click();
@@ -432,7 +432,7 @@ test('rich memo formatting survives a later main-view edit', async ({ page }) =>
   await simple.type(' 확인');
 
   await page.locator('.tabs').getByRole('button', { name: '자유메모' }).click();
-  const richAgain = page.locator('.detail-card .rich-editor');
+  const richAgain = page.locator('.detail-card .advanced-content .tiptap');
   await expect(richAgain.locator('b, strong')).toContainText('서식 유지');
   await expect(richAgain).toContainText('확인');
 });
@@ -495,7 +495,8 @@ test('schedule card sorts by date, highlights urgency, and collapses completed i
   const textInput = card.getByLabel('새 일정 내용');
   const addButton = card.getByRole('button', { name: '추가' });
 
-  await expect(addButton).toBeDisabled();
+  await expect(dateInput).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+  await expect(addButton).toBeEnabled();
 
   for (const item of [
     { date: dates.normal, text: '나중 일정' },
@@ -534,4 +535,22 @@ test('schedule card sorts by date, highlights urgency, and collapses completed i
   const reloaded = page.locator('.dashboard-card:has(input.card-title[value="일정"])');
   await expect(reloaded.locator('.schedule-item:not(.done)')).toHaveCount(2);
   await expect(reloaded.locator('.schedule-completed .completed-toggle')).toContainText('완료 1');
+});
+
+test('main visibility and tab order are independent',async({page})=>{
+  await page.goto('/');
+  await page.evaluate(()=>localStorage.clear());
+  await page.reload();
+  await page.locator('.tabs').getByRole('button',{name:'할 일'}).click();
+  await page.getByLabel('메인에 표시').uncheck();
+  await page.locator('.tabs').getByRole('button',{name:'메인'}).click();
+  await expect(page.locator('.dashboard-card input.card-title[value="할 일"]')).toHaveCount(0);
+  await expect(page.locator('.tabs').getByRole('button',{name:'할 일'})).toBeVisible();
+  await page.getByRole('button',{name:'설정'}).click();
+  await page.getByRole('button',{name:'탭 순서 변경'}).click();
+  await expect(page.locator('.tab-order-row').first()).toContainText('메인');
+  await page.getByRole('button',{name:'완료'}).click();
+  await page.reload();
+  await expect(page.locator('.tabs').getByRole('button',{name:'할 일'})).toBeVisible();
+  await expect(page.locator('.dashboard-card input.card-title[value="할 일"]')).toHaveCount(0);
 });

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import type { ScheduleData, ScheduleItem } from '../types/dashboard';
 import { makeId } from '../lib/id';
 import { scheduleUrgency, sortScheduleItems } from '../lib/schedule';
@@ -9,6 +9,7 @@ export function ScheduleCard({ data, onChange, onAskDelete, detail = false }: {
   onAskDelete: (item: ScheduleItem) => void;
   detail?: boolean;
 }) {
+  const localToday=()=>{const today=new Date();return `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;};
   const active = sortScheduleItems(data.items.filter(item => !item.done));
   const completed = sortScheduleItems(data.items.filter(item => item.done));
 
@@ -16,14 +17,14 @@ export function ScheduleCard({ data, onChange, onAskDelete, detail = false }: {
     onChange({ ...data, items: data.items.map(item => item.id === id ? { ...item, ...patchValue } : item) });
 
   const add = () => {
-    if (!data.draftDate) return;
+    const chosenDate=data.draftDate || localToday();
     onChange({
       ...data,
-      draftDate: '',
+      draftDate: localToday(),
       draftText: '',
       items: [...data.items, {
         id: makeId('schedule'),
-        date: data.draftDate,
+        date: chosenDate,
         text: data.draftText.trimEnd(),
         done: false,
         createdAt: new Date().toISOString()
@@ -54,9 +55,7 @@ export function ScheduleCard({ data, onChange, onAskDelete, detail = false }: {
         aria-label="일정 내용"
         onChange={e => patch(item.id, { text: e.target.value })}
       />
-      <button className="icon-button subtle" aria-label="일정 삭제" onClick={() => onAskDelete(item)}>
-        <Trash2 size={15}/>
-      </button>
+
     </div>;
   };
 
@@ -76,7 +75,7 @@ export function ScheduleCard({ data, onChange, onAskDelete, detail = false }: {
     <div className="schedule-add">
       <input
         type="date"
-        value={data.draftDate}
+        value={data.draftDate || localToday()}
         aria-label="새 일정 날짜"
         required
         onChange={e => onChange({ ...data, draftDate: e.target.value })}
@@ -86,13 +85,13 @@ export function ScheduleCard({ data, onChange, onAskDelete, detail = false }: {
         aria-label="새 일정 내용"
         onChange={e => onChange({ ...data, draftText: e.target.value })}
         onKeyDown={e => {
-          if (e.key === 'Enter' && data.draftDate) {
+          if (e.key === 'Enter') {
             e.preventDefault();
             add();
           }
         }}
       />
-      <button className="button primary" onClick={add} disabled={!data.draftDate}><Plus size={17}/> 추가</button>
+      <button className="button primary" onClick={add} ><Plus size={17}/> 추가</button>
     </div>
   </div>;
 }

@@ -1,12 +1,13 @@
-import { GripVertical, Maximize2, Star, Trash2 } from 'lucide-react';
+import { Archive, GripVertical, Maximize2, Star, Trash2 } from 'lucide-react';
 import type { CardRecord } from '../types/dashboard';
 
-export function CardShell({ card, children, onTitle, onFavorite, onDelete, onOpenDetail, detail = false }: {
+export function CardShell({ card, children, onTitle, onFavorite, onDelete, onArchive, onOpenDetail, detail = false }: {
   card: CardRecord;
   children: React.ReactNode;
   onTitle: (title: string) => void;
   onFavorite: () => void;
   onDelete: () => void;
+  onArchive?: () => void;
   onOpenDetail?: () => void;
   detail?: boolean;
 }) {
@@ -17,6 +18,7 @@ export function CardShell({ card, children, onTitle, onFavorite, onDelete, onOpe
       <div className="card-actions drag-cancel">
         {!detail && onOpenDetail && <button className="icon-button subtle" title="크게 보기" aria-label="카드 크게 보기" onClick={onOpenDetail}><Maximize2 size={16}/></button>}
         <button className={`icon-button subtle ${card.favorite ? 'favorite' : ''}`} title={card.favorite ? '즐겨찾기 해제' : '즐겨찾기'} aria-label="즐겨찾기" onClick={onFavorite}><Star size={17} fill={card.favorite ? 'currentColor' : 'none'}/></button>
+        {onArchive && <button className="icon-button subtle" title="카드 보관" aria-label="카드 보관" onClick={onArchive}><Archive size={16}/></button>}
         <button className="icon-button subtle" title={card.favorite ? '즐겨찾기 해제 후 삭제할 수 있습니다.' : '카드 삭제'} aria-label="카드 삭제" disabled={card.favorite} onClick={onDelete}><Trash2 size={16}/></button>
       </div>
     </header>

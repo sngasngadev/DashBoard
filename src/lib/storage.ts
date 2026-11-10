@@ -61,6 +61,8 @@ async function idbSet(value: DashboardState): Promise<void> {
 
 /** Synchronous write-ahead snapshot: survives an immediate tab close. */
 export function saveEmergencySnapshot(state: DashboardState): void {
+  // Native SQLite commits synchronously in the main process; no browser journal.
+  if (window.dashboardDesktop) return;
   localStorage.setItem(FALLBACK_KEY, JSON.stringify(state));
 }
 
@@ -75,6 +77,10 @@ function pendingSnapshot(): DashboardState | null {
 }
 
 export async function loadState(): Promise<DashboardState> {
+  if (window.dashboardDesktop) {
+    const stored = await window.dashboardDesktop.loadState();
+    return stored === null ? normalizeState(null) : validateStoredState(stored);
+  }
   // The write-ahead snapshot is newer than any unconfirmed IndexedDB write.
   const pending = pendingSnapshot();
   if (pending) {
@@ -103,6 +109,11 @@ export async function loadState(): Promise<DashboardState> {
 // Serialize transactions to prevent an older state overwriting a newer one.
 let writeQueue: Promise<void> = Promise.resolve();
 export function saveState(state: DashboardState): Promise<boolean> {
+  if (window.dashboardDesktop) {
+    const operation=writeQueue.catch(()=>undefined).then(()=>window.dashboardDesktop!.saveState(state).then(()=>undefined));
+    writeQueue=operation;
+    return operation.then(()=>true);
+  }
   const serialized = JSON.stringify(state);
   const operation = writeQueue.catch(() => undefined).then(async () => {
     try {
@@ -122,6 +133,10 @@ export function saveState(state: DashboardState): Promise<boolean> {
 }
 
 export async function exportBackup(state: DashboardState) {
+  if (window.dashboardDesktop) {
+    await window.dashboardDesktop.backup();
+    return true;
+  }
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

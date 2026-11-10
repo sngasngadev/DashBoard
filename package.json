@@ -18,7 +18,13 @@
     "react-dom": "18.3.1",
     "react-grid-layout": "1.5.4",
     "react-resizable": "3.2.0",
-    "react-draggable": "4.7.2"
+    "react-draggable": "4.7.2",
+    "@tiptap/react": "3.31.4",
+    "@tiptap/starter-kit": "3.31.4",
+    "@tiptap/extension-table": "3.31.4",
+    "@tiptap/extension-image": "3.31.4",
+    "@tiptap/extension-text-style": "3.31.4",
+    "@tiptap/extension-text-align": "3.31.4"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

@@ -36,7 +36,7 @@ export function TodoCard({ data, onChange, onAskDelete, detail = false }: {
       {!data.completedCollapsed && <div className="todo-list completed-list">{completed.map(renderItem)}</div>}
     </div>}
     <div className="todo-add">
-      <textarea value={data.draft} onChange={e => onChange({ ...data, draft: e.target.value })} rows={detail ? 3 : 2} />
+      <textarea aria-label="새 할 일 입력" value={data.draft} onChange={e => onChange({ ...data, draft: e.target.value })} rows={1} />
       <button className="button primary" onClick={add} disabled={!data.draft.trim()}><Plus size={17}/> 추가</button>
     </div>
   </div>;
