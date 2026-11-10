@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Database = require('better-sqlite3');
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 function openDashboardDatabase(root) {
   const dataDir = path.join(root, 'data');
@@ -83,6 +83,14 @@ function openDashboardDatabase(root) {
     })();
   }
 
+  if(version < 3){
+    db.transaction(()=>{
+      db.exec(`ALTER TABLE notes ADD COLUMN archived_at TEXT;
+        CREATE INDEX idx_notes_archived ON notes(archived_at);`);
+      db.pragma('user_version = 3');
+    })();
+  }
+
   function loadState() {
     const row = db.prepare('SELECT payload FROM dashboard_state WHERE id = 1').get();
     if (!row) return null;
@@ -135,10 +143,10 @@ function openDashboardDatabase(root) {
   function listNotes(cardId) {
     return db.prepare(`SELECT id,card_id AS cardId,title,substr(plain_text,1,160) AS preview,
       sort_order AS sortOrder,updated_at AS updatedAt
-      FROM notes WHERE card_id=? AND deleted_at IS NULL ORDER BY sort_order,created_at,id`).all(cardId);
+      FROM notes WHERE card_id=? AND deleted_at IS NULL AND archived_at IS NULL ORDER BY sort_order,created_at,id`).all(cardId);
   }
   function getNote(id) {
-    const note = db.prepare('SELECT * FROM notes WHERE id=? AND deleted_at IS NULL').get(id);
+    const note = db.prepare('SELECT * FROM notes WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL').get(id);
     return note ? {
       id:note.id,cardId:note.card_id,title:note.title,document:JSON.parse(note.document_json),
       sortOrder:note.sort_order,updatedAt:note.updated_at
@@ -155,27 +163,50 @@ function openDashboardDatabase(root) {
       substr(n.plain_text,CASE WHEN instr(n.plain_text,?)>60
         THEN instr(n.plain_text,?)-60 ELSE 1 END,160) AS preview,
       n.sort_order AS sortOrder,n.updated_at AS updatedAt
-      FROM notes n WHERE n.card_id=? AND n.deleted_at IS NULL AND ${condition}
+      FROM notes n WHERE n.card_id=? AND n.deleted_at IS NULL AND n.archived_at IS NULL AND ${condition}
       ORDER BY n.sort_order,n.created_at,n.id LIMIT 500`;
     return db.prepare(sql).all(q,q,...(field==='all'?[cardId,q,q]:[cardId,q]));
   }
 
   function reorderNotes(cardId, ids) {
     if (!Array.isArray(ids) || new Set(ids).size !== ids.length) throw new Error('잘못된 메모 순서');
-    const rows = db.prepare('SELECT id FROM notes WHERE card_id=? AND deleted_at IS NULL').all(cardId);
+    const rows = db.prepare('SELECT id FROM notes WHERE card_id=? AND deleted_at IS NULL AND archived_at IS NULL').all(cardId);
     if (rows.length !== ids.length || rows.some(row => !ids.includes(row.id))) throw new Error('메모 목록이 변경되었습니다. 다시 불러오세요.');
     return db.transaction(() => {
-      const update=db.prepare('UPDATE notes SET sort_order=? WHERE id=? AND card_id=? AND deleted_at IS NULL');
+      const update=db.prepare('UPDATE notes SET sort_order=? WHERE id=? AND card_id=? AND deleted_at IS NULL AND archived_at IS NULL');
       ids.forEach((id,index)=>update.run(index,id,cardId));
       return true;
     })();
   }
+  function archiveNote(id,originalCardTitle) {
+    return db.prepare(`UPDATE notes SET archived_at=?,original_card_title=?
+      WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL`)
+      .run(new Date().toISOString(),originalCardTitle||'',id).changes===1;
+  }
+  function listArchive() {
+    return db.prepare(`SELECT id,title,card_id AS originalCardId,original_card_title AS originalCardTitle,
+      substr(plain_text,1,160) AS preview,archived_at AS archivedAt FROM notes
+      WHERE archived_at IS NOT NULL AND deleted_at IS NULL ORDER BY archived_at DESC`).all();
+  }
+  function restoreArchive(items) {
+    if(!Array.isArray(items))throw new Error('잘못된 복원 요청');
+    return db.transaction(()=>{
+      let count=0;
+      for(const {id,cardId} of items){
+        if(typeof id!=='string'||typeof cardId!=='string'||!cardId)throw new Error('복원할 메모묶음이 필요합니다.');
+        const max=db.prepare('SELECT MAX(sort_order) AS n FROM notes WHERE card_id=? AND deleted_at IS NULL AND archived_at IS NULL').get(cardId).n;
+        count+=db.prepare(`UPDATE notes SET card_id=?,sort_order=?,archived_at=NULL WHERE id=? AND archived_at IS NOT NULL AND deleted_at IS NULL`)
+          .run(cardId,(max??-1)+1,id).changes;
+      }
+      return count;
+    })();
+  }
   function trashNote(id, originalCardTitle) {
-    return db.prepare('UPDATE notes SET deleted_at=?,original_card_title=? WHERE id=? AND deleted_at IS NULL')
+    return db.prepare('UPDATE notes SET deleted_at=?,original_card_title=? WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL')
       .run(new Date().toISOString(), originalCardTitle || '', id).changes === 1;
   }
   function trashCardNotes(cardId, originalCardTitle) {
-    return db.prepare('UPDATE notes SET deleted_at=?,original_card_title=? WHERE card_id=? AND deleted_at IS NULL')
+    return db.prepare('UPDATE notes SET deleted_at=?,original_card_title=? WHERE card_id=? AND deleted_at IS NULL AND archived_at IS NULL')
       .run(new Date().toISOString(), originalCardTitle || '', cardId).changes;
   }
   function listTrash() {
@@ -234,7 +265,7 @@ function openDashboardDatabase(root) {
     return dest;
   }
   return { loadState, saveState, upsertNote, listNotes, getNote, searchNotes,
-    reorderNotes, trashNote, trashCardNotes, listTrash, restoreNotes, permanentlyDeleteNotes,
+    reorderNotes, archiveNote, listArchive, restoreArchive, trashNote, trashCardNotes, listTrash, restoreNotes, permanentlyDeleteNotes,
     saveAttachment, getAttachment, backup, backupIfDue, close:()=>db.close() };
 }
 module.exports = { openDashboardDatabase };
