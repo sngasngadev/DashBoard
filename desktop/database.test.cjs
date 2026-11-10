@@ -89,6 +89,7 @@ test('Free memo attachment references survive note deletion and SQLite upgrades'
     db.close();db=null;
     const SQLite=require('better-sqlite3');
     const native=new SQLite(path.join(root,'data','dashboard.db'));
+    native.exec('DROP INDEX idx_notes_archived; ALTER TABLE notes DROP COLUMN archived_at;');
     native.pragma('user_version = 1');
     native.close();
     db=openDashboardDatabase(root);
