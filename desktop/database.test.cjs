@@ -95,7 +95,15 @@ test('Free memo attachment references survive note deletion and SQLite upgrades'
     assert.equal(db.loadState().cards[0].data.html,html);
     assert.deepEqual(db.getAttachment('pic').bytes,[137,80,78,71]);
     assert.ok(awaitableExists(db.backupIfDue));
-  } finally {if(db)db.close();fs.rmSync(root,{recursive:true,force:true,maxRetries:10,retryDelay:150});}
+  } finally {
+    if(db)db.close();
+    try {fs.rmSync(root,{recursive:true,force:true,maxRetries:10,retryDelay:150});}
+    catch(error) {
+      // Windows Defender/AV may retain a temporary SQLite handle after all DB connections close.
+      if(process.platform!=='win32'||!['EPERM','EBUSY','ENOTEMPTY'].includes(error.code))throw error;
+      console.warn('Deferred temporary SQLite test directory cleanup:',String(error));
+    }
+  }
 });
 function awaitableExists(value){return typeof value==='function';}
 
