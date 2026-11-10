@@ -47,6 +47,7 @@ export function createInitialState(): DashboardState {
     meta: { title: '나의 대시보드', description: '필요한 정보와 할 일을 한 화면에서 관리하세요.' },
     settings: { autoCompact: true, addTileLayout: nextCardPosition([first, second], ADD_TILE_WIDTH, ADD_TILE_HEIGHT) },
     cards: [first, second],
+    archivedCards: [],
     tabOrder: [first.id, second.id]
   };
 }
@@ -173,6 +174,12 @@ export function normalizeState(raw: unknown): DashboardState {
   });
 
   const cards = repairMainCards(normalizedCards);
+  const archivedCards = Array.isArray(raw.archivedCards) ? raw.archivedCards.flatMap(value => {
+    const card=normalizeCard(value);
+    if(!card||card.type==='memoBundle'||seen.has(card.id))return [];
+    seen.add(card.id);
+    return [{...card,archivedAt:isObject(value)?str(value.archivedAt,now()):now()}];
+  }) : [];
   const meta = isObject(raw.meta) ? raw.meta : {};
   const settings = isObject(raw.settings) ? raw.settings : {};
   const rawAddTile = isObject(settings.addTileLayout)
@@ -191,6 +198,7 @@ export function normalizeState(raw: unknown): DashboardState {
       addTileLayout
     },
     cards,
+    archivedCards,
     tabOrder: [...(Array.isArray(raw.tabOrder) ? raw.tabOrder.filter((id): id is string => typeof id === 'string' && cards.some(card => card.id === id)) : []), ...cards.map(card => card.id)].filter((id, index, arr) => arr.indexOf(id) === index)
   };
 }
