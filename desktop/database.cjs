@@ -185,7 +185,7 @@ function openDashboardDatabase(root) {
   }
   function listArchive() {
     return db.prepare(`SELECT id,title,card_id AS originalCardId,original_card_title AS originalCardTitle,
-      substr(plain_text,1,160) AS preview,archived_at AS archivedAt FROM notes
+      substr(plain_text,1,160) AS preview,plain_text AS body,archived_at AS archivedAt FROM notes
       WHERE archived_at IS NOT NULL AND deleted_at IS NULL ORDER BY archived_at DESC`).all();
   }
   function restoreArchive(items) {
