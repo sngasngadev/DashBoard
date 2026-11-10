@@ -385,3 +385,7 @@ textarea { resize: none; }
 .archive-restore-options {display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .archive-restore-options select {min-width:150px;max-width:220px;border:1px solid #d0d5dd;border-radius:6px;padding:7px}
 @media(max-width:650px){.archive-entry{align-items:stretch;flex-direction:column}}
+
+.archive-expand {border:0;background:none;color:#175cd3;font-size:12px;padding:4px 0;text-align:left;align-self:flex-start;cursor:pointer}
+.archive-expand:hover {text-decoration:underline}
+.archive-fulltext {font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;color:#344054;background:#f8fafc;border:1px solid #edf0f5;border-radius:7px;padding:10px;max-height:270px;overflow-y:auto;margin:4px 0}
