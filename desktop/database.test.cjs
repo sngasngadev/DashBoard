@@ -95,7 +95,7 @@ test('Free memo attachment references survive note deletion and SQLite upgrades'
     assert.equal(db.loadState().cards[0].data.html,html);
     assert.deepEqual(db.getAttachment('pic').bytes,[137,80,78,71]);
     assert.ok(awaitableExists(db.backupIfDue));
-  } finally {if(db)db.close();fs.rmSync(root,{recursive:true,force:true});}
+  } finally {if(db)db.close();fs.rmSync(root,{recursive:true,force:true,maxRetries:10,retryDelay:150});}
 });
 function awaitableExists(value){return typeof value==='function';}
 
