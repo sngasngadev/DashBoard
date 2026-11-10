@@ -30,7 +30,6 @@ export function RichTextEditor({html,onChange,onBlur,onImage,resolveImage,serial
   serializer.current=serialize;
   const resolved=useRef(new Set<string>());
   const urls=useRef<string[]>([]);
-  const editorRef=useRef<ReturnType<typeof useEditor>>(null);
   const editor=useEditor({
     extensions, content:html||'<p></p>',
     onUpdate:({editor})=>{
@@ -50,10 +49,8 @@ export function RichTextEditor({html,onChange,onBlur,onImage,resolveImage,serial
         const table=tabularTextToHtml(clipboard.getData('text/plain'));
         if(table){
           event.preventDefault();
-          view.focus();
-          const {from,to}=view.state.selection;
-          // TableKit parses the generated table into editable cell nodes.
-          editorRef.current?.chain().focus().insertContentAt({from,to},table).run();
+          // Route generated HTML through ProseMirror's native clipboard parser.
+          view.pasteHTML(table);
           return true;
         }
         const item=[...clipboard.items].find(item=>item.kind==='file'&&item.type.startsWith('image/'));
